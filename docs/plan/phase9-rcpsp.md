@@ -87,10 +87,10 @@ Exhaustive optimum 20 (for example priority order F B C D E A G); worst order
 
 ## Acceptance criteria
 
-- [ ] AC1: Engine tests pass: CPM 13, rule makespans 22 / 22 / 24 / 24 / 28 / 28 in the order listed, exhaustive best 20 and worst 28 over 5040 orders, under 150 ms.
-- [ ] AC2: Beat 1 shows hatched programmer overload; beat 2 shows none and reads 22.
-- [ ] AC3: Beat 3's rule control changes the Gantt and the strip marker for every rule with the verified values.
-- [ ] AC4: Beat 4's search animation ends at 20 with a visible lower-bound line at 13 and an "Orders evaluated: 5040" readout.
-- [ ] AC5: Beat 5 capacity changes recompute all rules and the optimum without blocking input (search runs in `startTransition`).
-- [ ] AC6: Scene `aria-label` reports mode, rule and days; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: Engine tests pass: CPM 13, rule makespans 22 / 22 / 24 / 24 / 28 / 28 in the order listed, exhaustive best 20 and worst 28 over 5040 orders, under 150 ms.
+- [x] AC2: Beat 1 shows hatched programmer overload; beat 2 shows none and reads 22.
+- [x] AC3: Beat 3's rule control changes the Gantt and the strip marker for every rule with the verified values.
+- [x] AC4: Beat 4's search animation ends at 20 with a visible lower-bound line at 13 and an "Orders evaluated: 5040" readout.
+- [x] AC5: Beat 5 capacity changes recompute all rules and the optimum without blocking input (search runs in `startTransition`).
+- [x] AC6: Scene `aria-label` reports mode, rule and days; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

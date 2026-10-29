@@ -83,10 +83,10 @@ Shortest-first rule: 12 days. Two designers: 8 days. One developer: 12 days.
 
 ## Acceptance criteria
 
-- [ ] AC1: Engine tests pass for the table, `levelWithinFloat` unresolved = ["Y1"], `level` min-lst = 9 with the listed starts, shortest = 12, two designers = 8, one developer = 12.
-- [ ] AC2: Beat 1's lanes show hatched overloads on designer days 0–1 and developer day 3.
-- [ ] AC3: Beat 2 moves only Z1 and leaves one hatched day; beat 3 shows no hatched day and an end day of 9.
-- [ ] AC4: Beat 4's rule toggle animates to a 12-day schedule and back.
-- [ ] AC5: Dragging X1 right by one day in beat 5 pushes X2 and X3 and updates the lanes; the capacity toggles give 8 and 12.
-- [ ] AC6: Scene `aria-label` reports end day and overloaded days; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: Engine tests pass for the table, `levelWithinFloat` unresolved = ["Y1"], `level` min-lst = 9 with the listed starts, shortest = 12, two designers = 8, one developer = 12.
+- [x] AC2: Beat 1's lanes show hatched overloads on designer days 0–1 and developer day 3.
+- [x] AC3: Beat 2 moves only Z1 and leaves one hatched day; beat 3 shows no hatched day and an end day of 9.
+- [x] AC4: Beat 4's rule toggle animates to a 12-day schedule and back.
+- [x] AC5: Dragging X1 right by one day in beat 5 pushes X2 and X3 and updates the lanes; the capacity toggles give 8 and 12.
+- [x] AC6: Scene `aria-label` reports end day and overloaded days; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

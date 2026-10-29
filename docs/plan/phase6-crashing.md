@@ -77,10 +77,10 @@ $2000.
 
 ## Acceptance criteria
 
-- [ ] AC1: `crashCurve(BOOTH)` yields days 15 → 9 with cumulative direct costs 0, 400, 1000, 1600, 2900, 4400, 5900 and the crashed sets B, A, A, B+C, D, D.
-- [ ] AC2: `optimum` returns 15 / 14 / 12 / 12 / 11 / 9 days for overhead 300 / 500 / 800 / 1000 / 1400 / 2000.
-- [ ] AC3: After the first crash in beat 2 both critical paths render in `accent`; the second crash highlights Design.
-- [ ] AC4: Beat 4's total-cost curve shows its minimum at 12 days with the default overhead; moving the slider to 2000 moves the dot to 9.
-- [ ] AC5: Undo restores the previous network, readouts and chart point; the Graphics button changes the direct cost but not the days.
-- [ ] AC6: Scene `aria-label` reports days, direct cost and the current optimum; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `crashCurve(BOOTH)` yields days 15 → 9 with cumulative direct costs 0, 400, 1000, 1600, 2900, 4400, 5900 and the crashed sets B, A, A, B+C, D, D.
+- [x] AC2: `optimum` returns 15 / 14 / 12 / 12 / 11 / 9 days for overhead 300 / 500 / 800 / 1000 / 1400 / 2000.
+- [x] AC3: After the first crash in beat 2 both critical paths render in `accent`; the second crash highlights Design.
+- [x] AC4: Beat 4's total-cost curve shows its minimum at 12 days with the default overhead; moving the slider to 2000 moves the dot to 9.
+- [x] AC5: Undo restores the previous network, readouts and chart point; the Graphics button changes the direct cost but not the days.
+- [x] AC6: Scene `aria-label` reports days, direct cost and the current optimum; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

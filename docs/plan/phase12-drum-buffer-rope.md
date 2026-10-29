@@ -78,10 +78,10 @@ drum gains almost nothing.
 
 ## Acceptance criteria
 
-- [ ] AC1: `dbr.test.ts` passes for the table and the seed-1 thresholds.
-- [ ] AC2: Beat 1 shows a weld queue over 100 at day 60 and a cycle-time readout of about 16; beat 2 shows WIP 9 and cycle time 3.
-- [ ] AC3: Beat 3 shows weld busy about 71% with visible starvation flashes; beat 4 shows about 94% with buffer 12.
-- [ ] AC4: The sweep chart's utilisation line rises steeply to buffer 12 and flattens after; the cycle-time line rises by about one day per three units.
-- [ ] AC5: The rope line draws when release switches to drum and the gate readout matches the engine's release count each tick.
-- [ ] AC6: Scene `aria-label` reports release mode, buffer target, weld utilisation and throughput; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `dbr.test.ts` passes for the table and the seed-1 thresholds.
+- [x] AC2: Beat 1 shows a weld queue over 100 at day 60 and a cycle-time readout of about 16; beat 2 shows WIP 9 and cycle time 3.
+- [x] AC3: Beat 3 shows weld busy about 71% with visible starvation flashes; beat 4 shows about 94% with buffer 12.
+- [x] AC4: The sweep chart's utilisation line rises steeply to buffer 12 and flattens after; the cycle-time line rises by about one day per three units.
+- [x] AC5: The rope line draws when release switches to drum and the gate readout matches the engine's release count each tick.
+- [x] AC6: Scene `aria-label` reports release mode, buffer target, weld utilisation and throughput; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

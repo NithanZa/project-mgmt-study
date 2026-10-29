@@ -85,10 +85,10 @@ Convergence (k = 3, P80 standard deviation across 20 seeds): 10 runs 0.40,
 
 ## Acceptance criteria
 
-- [ ] AC1: `simulate({ streams: 3, runs: 4000, seed: 7 })` returns mean 13.03 ±0.1 and P50 13.0 ±0.1; with `streams: 1` P50 is 11.6 ±0.1.
-- [ ] AC2: Beat 3's streams slider changes the network row count with animation and moves the P50 marker monotonically to the right from 1 to 6 streams while the PERT marker stays at 11.7.
-- [ ] AC3: Beat 4 shows criticality bars that sum to 100% and the rush toggle gives Speakers the largest share.
-- [ ] AC4: Beat 5's convergence band width at 5000 runs is under 0.1 days and at 10 runs over 0.5 days.
-- [ ] AC5: Rolling in beat 1 animates one dot onto the axis and updates the sampled values on the boxes without re-running the full simulation.
-- [ ] AC6: Scene `aria-label` reports streams, runs, P50 and P80; all controls work by keyboard.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `simulate({ streams: 3, runs: 4000, seed: 7 })` returns mean 13.03 ±0.1 and P50 13.0 ±0.1; with `streams: 1` P50 is 11.6 ±0.1.
+- [x] AC2: Beat 3's streams slider changes the network row count with animation and moves the P50 marker monotonically to the right from 1 to 6 streams while the PERT marker stays at 11.7.
+- [x] AC3: Beat 4 shows criticality bars that sum to 100% and the rush toggle gives Speakers the largest share.
+- [x] AC4: Beat 5's convergence band width at 5000 runs is under 0.1 days and at 10 runs over 0.5 days.
+- [x] AC5: Rolling in beat 1 animates one dot onto the axis and updates the sampled values on the boxes without re-running the full simulation.
+- [x] AC6: Scene `aria-label` reports streams, runs, P50 and P80; all controls work by keyboard.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

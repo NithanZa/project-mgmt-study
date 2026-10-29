@@ -76,10 +76,10 @@ four requests arrive per day. Verified with the shared line simulator:
 
 ## Acceptance criteria
 
-- [ ] AC1: `kanban.test.ts` passes for the table and the Little's law check.
-- [ ] AC2: Beat 1 shows WIP over 100 by day 60 and a rising cycle-time readout; beat 2 shows WIP 10, throughput 2, cycle time 5.
-- [ ] AC3: Beat 3's CFD brackets read WIP 10 and cycle time 5 at the final tick and the formula line shows the same numbers.
-- [ ] AC4: Beat 4's outage fills Build and Analyse to their limits, shows the waiting stripe, and the throughput readout dips below 1.9 before recovering.
-- [ ] AC5: Beat 5's sweep chart shows throughput 1 at limit 1 and, with variability on, throughput below 1.85 at limit 2 and above 1.95 at limit 3.
-- [ ] AC6: Scene `aria-label` reports the limit, WIP, throughput and cycle time; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `kanban.test.ts` passes for the table and the Little's law check.
+- [x] AC2: Beat 1 shows WIP over 100 by day 60 and a rising cycle-time readout; beat 2 shows WIP 10, throughput 2, cycle time 5.
+- [x] AC3: Beat 3's CFD brackets read WIP 10 and cycle time 5 at the final tick and the formula line shows the same numbers.
+- [x] AC4: Beat 4's outage fills Build and Analyse to their limits, shows the waiting stripe, and the throughput readout dips below 1.9 before recovering.
+- [x] AC5: Beat 5's sweep chart shows throughput 1 at limit 1 and, with variability on, throughput below 1.85 at limit 2 and above 1.95 at limit 3.
+- [x] AC6: Scene `aria-label` reports the limit, WIP, throughput and cycle time; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

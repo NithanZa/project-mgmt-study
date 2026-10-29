@@ -96,10 +96,10 @@ buffer 5–7 lands exactly at Pages' start. Root-sum-square sizing gives
 
 ## Acceptance criteria
 
-- [ ] AC1: Engine tests pass for safe CPM 23, feasible safe 26, aggressive chain 16, buffers 5 / 6 and 2, and the fever zones listed.
-- [ ] AC2: Beat 2 shows the chain Copy → CMS → Pages → Integrate → Launch with a dashed resource link and Design with 3 days of float.
-- [ ] AC3: Beat 3 shows the committed date 21, a 5-day project buffer after Launch and a 2-day feeding buffer ending exactly at Pages' start.
-- [ ] AC4: In beat 4 the fever point is green with no overrun, yellow at CMS overrun 2 and red at 4.
-- [ ] AC5: Beat 5's buffer method control changes the project buffer to 6 and the committed date to 22.
-- [ ] AC6: Scene `aria-label` reports mode, committed date and fever zone; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: Engine tests pass for safe CPM 23, feasible safe 26, aggressive chain 16, buffers 5 / 6 and 2, and the fever zones listed.
+- [x] AC2: Beat 2 shows the chain Copy → CMS → Pages → Integrate → Launch with a dashed resource link and Design with 3 days of float.
+- [x] AC3: Beat 3 shows the committed date 21, a 5-day project buffer after Launch and a 2-day feeding buffer ending exactly at Pages' start.
+- [x] AC4: In beat 4 the fever point is green with no overrun, yellow at CMS overrun 2 and red at 4.
+- [x] AC5: Beat 5's buffer method control changes the project buffer to 6 and the committed date to 22.
+- [x] AC6: Scene `aria-label` reports mode, committed date and fever zone; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

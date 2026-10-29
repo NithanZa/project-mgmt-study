@@ -1,26 +1,90 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  color-scheme: light;
+  --bg: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-2: #efeeea;
+  --fg: #0b0b0b;
+  --muted: #5c5b57;
+  --line: #e1e0d9;
+  --accent: #256abf;
+  --accent-soft: color-mix(in oklab, var(--accent) 15%, transparent);
+  --float: #6250d6;
+  --buffer: #8f5b00;
+  --constraint: #c23b3a;
+  --ok: #006300;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #252523;
+    --fg: #f0efec;
+    --muted: #b0afa6;
+    --line: #383835;
+    --accent: #5598e7;
+    --float: #9b91ec;
+    --buffer: #eda100;
+    --constraint: #ec7372;
+    --ok: #2bb32b;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-float: var(--float);
+  --color-buffer: var(--buffer);
+  --color-constraint: var(--constraint);
+  --color-ok: var(--ok);
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    currentColor 0 2px,
+    transparent 2px 7px
+  );
+}
+
+/* Lesson route transitions: the lesson column and scene panel crossfade. */
+::view-transition-old(.lesson),
+::view-transition-new(.lesson) {
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+}
+
+/* Everything outside the lesson grid swaps at once, so the progress rail's
+   Motion indicator is the only thing animating there. */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

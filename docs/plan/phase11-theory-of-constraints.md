@@ -107,10 +107,10 @@ Scenario (per hour, simulated for 80 hours). Mix 60, Proof 40, Bake 25, Cool
 
 ## Acceptance criteria
 
-- [ ] AC1: `simulateLine` reproduces the bakery table within tolerance in `line-sim.test.ts` and `toc.test.ts`, and conservation holds on every tick.
-- [ ] AC2: Beat 1 playback shows the pile growing only before the oven and a throughput readout of 25.
-- [ ] AC3: Beat 3 toggles give 20 per hour with cleaning loss on, and 25 per hour with cycle time 5 h and WIP 125 with subordinate on.
-- [ ] AC4: Beat 4's invest buttons show deltas of 0 for Pack and Proof and +12 for the oven.
-- [ ] AC5: Beat 5's ×2 control shows 38 per hour, oven utilisation under 80%, and the constraint tag moves to "Market".
-- [ ] AC6: Playback holds 55 fps or better at 4× in a 10-second performance sample; scene `aria-label` reports the constraint and throughput; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `simulateLine` reproduces the bakery table within tolerance in `line-sim.test.ts` and `toc.test.ts`, and conservation holds on every tick.
+- [x] AC2: Beat 1 playback shows the pile growing only before the oven and a throughput readout of 25.
+- [x] AC3: Beat 3 toggles give 20 per hour with cleaning loss on, and 25 per hour with cycle time 5 h and WIP 125 with subordinate on.
+- [x] AC4: Beat 4's invest buttons show deltas of 0 for Pack and Proof and +12 for the oven.
+- [x] AC5: Beat 5's ×2 control shows 38 per hour, oven utilisation under 80%, and the constraint tag moves to "Market".
+- [x] AC6: Playback holds 55 fps or better at 4× in a 10-second performance sample; scene `aria-label` reports the constraint and throughput; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

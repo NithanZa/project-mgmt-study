@@ -75,10 +75,10 @@ sigma 3.09, P(≤17) = 56%.
 
 ## Acceptance criteria
 
-- [ ] AC1: `projectEstimate(MIGRATION)` returns modeSum 13, expected 15.17 ±0.01, sigma 1.936 ±0.001, and `probabilityBy(17)` 0.828 ±0.005.
-- [ ] AC2: Beat 2 shows an expected marker right of the mode for every task, with Write migration reading 5.8.
-- [ ] AC3: Beat 3's project curve has its mean at 15.2 on the same axis as the rows and the 13-day shade reads 13%.
-- [ ] AC4: In beat 4 the confidence control sets the deadline to 15.2 / 16.8 / 17.7 / 18.4 for 50 / 80 / 90 / 95% and the deadline slider updates the probability readout live.
-- [ ] AC5: In beat 5 setting the pessimistic estimate to 20 shows expected 16.5 and P(≤17) 56%; Reset restores 15.2 and 83%.
-- [ ] AC6: The deadline line is draggable with the pointer and movable with arrow keys; the scene `aria-label` reports mean, sigma and the current probability.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `projectEstimate(MIGRATION)` returns modeSum 13, expected 15.17 ±0.01, sigma 1.936 ±0.001, and `probabilityBy(17)` 0.828 ±0.005.
+- [x] AC2: Beat 2 shows an expected marker right of the mode for every task, with Write migration reading 5.8.
+- [x] AC3: Beat 3's project curve has its mean at 15.2 on the same axis as the rows and the 13-day shade reads 13%.
+- [x] AC4: In beat 4 the confidence control sets the deadline to 15.2 / 16.8 / 17.7 / 18.4 for 50 / 80 / 90 / 95% and the deadline slider updates the probability readout live.
+- [x] AC5: In beat 5 setting the pessimistic estimate to 20 shows expected 16.5 and P(≤17) 56%; Reset restores 15.2 and 83%.
+- [x] AC6: The deadline line is draggable with the pointer and movable with arrow keys; the scene `aria-label` reports mean, sigma and the current probability.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

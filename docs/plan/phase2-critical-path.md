@@ -85,10 +85,10 @@ weeks with two critical paths (A B E F H and A C G H).
 
 ## Acceptance criteria
 
-- [ ] AC1: `computeCriticalPath(COFFEE_SHOP)` returns duration 12, the ES/EF/LS/LF/float table above, and `criticalPaths` equal to `[["A","B","E","F","H"]]`.
-- [ ] AC2: The three presets produce 13 (path A C G H), 13 (path A D F H) and 10 (two paths) in both the engine tests and the readouts.
-- [ ] AC3: Beat 2's ripple reveals ES/EF in topological order and beat 3's reveals LS/LF right to left; both play under 1.5 s and can be replayed.
-- [ ] AC4: Beat 4 shows the critical path in `accent` with thicker edges and the Gantt strip with float ghosts of 2, 4 and 2 weeks.
-- [ ] AC5: In beat 5 moving the Renovation slider to 8 keeps the opening at 12 and moving to 9 changes it to 13 with the path switching through C and G.
-- [ ] AC6: Scene `aria-label` updates with the current duration and path; all controls work by keyboard; the scene never remounts across beats.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `computeCriticalPath(COFFEE_SHOP)` returns duration 12, the ES/EF/LS/LF/float table above, and `criticalPaths` equal to `[["A","B","E","F","H"]]`.
+- [x] AC2: The three presets produce 13 (path A C G H), 13 (path A D F H) and 10 (two paths) in both the engine tests and the readouts.
+- [x] AC3: Beat 2's ripple reveals ES/EF in topological order and beat 3's reveals LS/LF right to left; both play under 1.5 s and can be replayed.
+- [x] AC4: Beat 4 shows the critical path in `accent` with thicker edges and the Gantt strip with float ghosts of 2, 4 and 2 weeks.
+- [x] AC5: In beat 5 moving the Renovation slider to 8 keeps the opening at 12 and moving to 9 changes it to 13 with the path switching through C and G.
+- [x] AC6: Scene `aria-label` updates with the current duration and path; all controls work by keyboard; the scene never remounts across beats.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

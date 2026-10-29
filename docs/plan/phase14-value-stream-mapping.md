@@ -80,10 +80,10 @@ from 5 h to 2 h moves the current lead time from 25.5 to 25.1 days.
 
 ## Acceptance criteria
 
-- [ ] AC1: `vsm.test.ts` passes for current, future A, future B and the onsite variant.
-- [ ] AC2: Beat 1's totals read 25.5 days lead time and 12 h process time; beat 2's ladder shows wait segments summing to 24 days.
-- [ ] AC3: Every inventory triangle exposes its waste type and reason on hover and on keyboard focus.
-- [ ] AC4: Beat 4's toggles show 12.5 days / 12% with four improvements and 7.5 days / 20% with all five; Reset restores 25.5.
-- [ ] AC5: Beat 5's onsite slider at 2 h shows 25.1 days with no improvements on.
-- [ ] AC6: Scene `aria-label` reports lead time, process time and efficiency; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `vsm.test.ts` passes for current, future A, future B and the onsite variant.
+- [x] AC2: Beat 1's totals read 25.5 days lead time and 12 h process time; beat 2's ladder shows wait segments summing to 24 days.
+- [x] AC3: Every inventory triangle exposes its waste type and reason on hover and on keyboard focus.
+- [x] AC4: Beat 4's toggles show 12.5 days / 12% with four improvements and 7.5 days / 20% with all five; Reset restores 25.5.
+- [x] AC5: Beat 5's onsite slider at 2 h shows 25.1 days with no improvements on.
+- [x] AC6: Scene `aria-label` reports lead time, process time and efficiency; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

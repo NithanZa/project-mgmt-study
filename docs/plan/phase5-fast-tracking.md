@@ -70,10 +70,10 @@ expected duration 66.25 (saved 27.5, rework 13.75); (5, 4, 5) give 69.6;
 
 ## Acceptance criteria
 
-- [ ] AC1: `schedule([0,0,0]).expected` is 80, `schedule([10,7.5,10]).expected` is 66.25 ±0.01, `schedule([19,14,19]).expected` is 77.17 ±0.01, and `bestOverlaps()` returns (10, 7.5, 10).
-- [ ] AC2: Dragging Foundations 10 days left in beat 2 shows saved 10, risk 50%, rework 5 and an expected finish of 75.
-- [ ] AC3: Beat 3's curve point reaches its maximum at 10 days and moves down on both sides.
-- [ ] AC4: Presets in beat 4 animate the bars and show 77 and 66 expected days.
-- [ ] AC5: Bars can be moved with arrow keys and the page does not scroll horizontally while dragging on a 375 px viewport.
-- [ ] AC6: Scene `aria-label` reports the three overlaps and the expected finish; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `schedule([0,0,0]).expected` is 80, `schedule([10,7.5,10]).expected` is 66.25 ±0.01, `schedule([19,14,19]).expected` is 77.17 ±0.01, and `bestOverlaps()` returns (10, 7.5, 10).
+- [x] AC2: Dragging Foundations 10 days left in beat 2 shows saved 10, risk 50%, rework 5 and an expected finish of 75.
+- [x] AC3: Beat 3's curve point reaches its maximum at 10 days and moves down on both sides.
+- [x] AC4: Presets in beat 4 animate the bars and show 77 and 66 expected days.
+- [x] AC5: Bars can be moved with arrow keys and the page does not scroll horizontally while dragging on a 375 px viewport.
+- [x] AC6: Scene `aria-label` reports the three overlaps and the expected finish; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

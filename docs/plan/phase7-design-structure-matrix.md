@@ -85,10 +85,10 @@ reverse order 10. The only coupled block is {E, P, T}.
 
 ## Acceptance criteria
 
-- [ ] AC1: `feedback(BIKE, ALPHABETICAL).count` is 4, `feedback(BIKE, partition(BIKE).order).count` is 1, and `partition(BIKE).blocks` equals `[["E","P","T"]]` in some order.
-- [ ] AC2: Beat 1's morph lands every node on its header with the same label, and 11 marks are visible.
-- [ ] AC3: Hovering or focusing an above-diagonal ring highlights the T → E edge in the graph.
-- [ ] AC4: Partition in beat 3 animates to the order M C I E P T L R with one ring left and the {E, P, T} block outlined.
-- [ ] AC5: In beat 4 rows can be reordered by drag and by Alt+arrow keys; the count readout updates on every move; Best restores the partition.
-- [ ] AC6: Scene `aria-label` reports the current order and feedback count; the lesson meets the phase 1 quality bar.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+- [x] AC1: `feedback(BIKE, ALPHABETICAL).count` is 4, `feedback(BIKE, partition(BIKE).order).count` is 1, and `partition(BIKE).blocks` equals `[["E","P","T"]]` in some order.
+- [x] AC2: Beat 1's morph lands every node on its header with the same label, and 11 marks are visible.
+- [x] AC3: Hovering or focusing an above-diagonal ring highlights the T → E edge in the graph.
+- [x] AC4: Partition in beat 3 animates to the order M C I E P T L R with one ring left and the {E, P, T} block outlined.
+- [x] AC5: In beat 4 rows can be reordered by drag and by Alt+arrow keys; the count readout updates on every move; Best restores the partition.
+- [x] AC6: Scene `aria-label` reports the current order and feedback count; the lesson meets the phase 1 quality bar.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.

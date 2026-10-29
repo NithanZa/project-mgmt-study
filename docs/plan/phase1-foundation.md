@@ -174,11 +174,11 @@ Quality bar (every lesson phase is checked against this list):
 
 ## Acceptance criteria
 
-- [ ] AC1: `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` exit 0; the build lists `/` and all 13 `/learn/<slug>` routes as static.
-- [ ] AC2: `/learn/cpm` renders the placeholder; ArrowRight / ArrowLeft and the buttons change beats; the copy cross-fades; the boxes move with a layout animation and the scene mounts exactly once per visit (verified with a mount log).
-- [ ] AC3: The last beat shows the check card; a correct answer reveals `why` and `/` shows the lesson as completed after reload.
-- [ ] AC4: Reloading restores the beat index; no hydration warning appears in the console.
-- [ ] AC5: With `prefers-reduced-motion` emulated, beat changes only fade.
-- [ ] AC6: At 375 px the scene panel is sticky and there is no horizontal overflow; at 1280 px the two-column layout renders.
-- [ ] AC7: All text roles pass 4.5:1 contrast in both colour schemes.
-- [ ] AC8: `src/lib/random.test.ts` shows `betaPert(3, 5, 9)` has a sample mean within 0.05 of 5.33 over 20 000 draws, and `stats.test.ts` shows `normalCdf(0.8)` within 1e-4 of 0.7881.
+- [x] AC1: `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` exit 0; the build lists `/` and all 13 `/learn/<slug>` routes as static.
+- [x] AC2: `/learn/cpm` renders the placeholder; ArrowRight / ArrowLeft and the buttons change beats; the copy cross-fades; the boxes move with a layout animation and the scene mounts exactly once per visit (verified with a mount log).
+- [x] AC3: The last beat shows the check card; a correct answer reveals `why` and `/` shows the lesson as completed after reload.
+- [x] AC4: Reloading restores the beat index; no hydration warning appears in the console.
+- [x] AC5: With `prefers-reduced-motion` emulated, beat changes only fade.
+- [x] AC6: At 375 px the scene panel is sticky and there is no horizontal overflow; at 1280 px the two-column layout renders.
+- [x] AC7: All text roles pass 4.5:1 contrast in both colour schemes.
+- [x] AC8: `src/lib/random.test.ts` shows `betaPert(3, 5, 9)` has a sample mean within 0.05 of 5.33 over 20 000 draws, and `stats.test.ts` shows `normalCdf(0.8)` within 1e-4 of 0.7881.

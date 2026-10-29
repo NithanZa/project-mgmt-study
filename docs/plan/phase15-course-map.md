@@ -58,9 +58,9 @@ and a sitemap. The `coming-soon` component is deleted.
 
 ## Acceptance criteria
 
-- [ ] AC1: `/` shows 5 chapters and 13 cards with thumbnails, in registry order; every card links to its lesson; no card uses the coming-soon fallback.
-- [ ] AC2: After visiting `/learn/pert` and reloading `/`, Continue points at `/learn/pert` and the ring shows the number of completed checks.
-- [ ] AC3: `n` and `p` navigate between lessons in registry order with a crossfade in Chromium; `?` opens and `Esc` closes the shortcuts dialog with focus returned to the trigger.
-- [ ] AC4: `/opengraph-image` and `/learn/cpm/opengraph-image` return 1200 × 630 PNGs; `/sitemap.xml` lists 14 URLs; `/robots.txt` allows all.
-- [ ] AC5: Lighthouse mobile on `/` scores at least 95 performance and 100 accessibility; CLS is 0.
-- [ ] AC6: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass and the build lists 13 lesson routes plus their Open Graph routes.
+- [x] AC1: `/` shows 5 chapters and 13 cards with thumbnails, in registry order; every card links to its lesson; no card uses the coming-soon fallback.
+- [x] AC2: After visiting `/learn/pert` and reloading `/`, Continue points at `/learn/pert` and the ring shows the number of completed checks.
+- [x] AC3: `n` and `p` navigate between lessons in registry order with a crossfade in Chromium; `?` opens and `Esc` closes the shortcuts dialog with focus returned to the trigger.
+- [x] AC4: `/opengraph-image` and `/learn/cpm/opengraph-image` return 1200 × 630 PNGs; `/sitemap.xml` lists 14 URLs; `/robots.txt` allows all.
+- [x] AC5: Lighthouse mobile on `/` scores at least 95 performance and 100 accessibility; CLS is 0.
+- [x] AC6: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass and the build lists 13 lesson routes plus their Open Graph routes.

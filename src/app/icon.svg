@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .c { color: #256abf; }
+    @media (prefers-color-scheme: dark) { .c { color: #5598e7; } }
+  </style>
+  <g class="c" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 16 16 25 27 16" stroke-width="2.5" opacity=".4" />
+    <path d="M5 16 16 7 27 16" stroke-width="3.5" />
+    <g fill="currentColor" stroke="none">
+      <circle cx="5" cy="16" r="4" />
+      <circle cx="16" cy="7" r="4" />
+      <circle cx="16" cy="25" r="3" opacity=".4" />
+      <circle cx="27" cy="16" r="4" />
+    </g>
+  </g>
+</svg>

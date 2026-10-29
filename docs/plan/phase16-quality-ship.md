@@ -74,10 +74,10 @@ ready to deploy from GitHub.
 
 ## Acceptance criteria
 
-- [ ] AC1: `pnpm e2e` passes in Chromium for all 13 lessons, `/`, the 404 route and the `n` shortcut, with zero console errors or warnings.
-- [ ] AC2: `docs/plan/review-log.md` lists every lesson with at least the per-beat checks from step 2 and every finding has a fix commit.
-- [ ] AC3: axe reports no serious or critical issues on `/` and on the first and last beat of every lesson; every control and drag has a verified keyboard path.
-- [ ] AC4: Lighthouse mobile scores are at least 95 performance and 100 accessibility on the three pages listed, with CLS 0.
-- [ ] AC5: Every lesson route's first-load JS is under 180 kB gzipped with one lesson chunk; the engine budget tests pass.
-- [ ] AC6: The Motion reviewer audit has been run and its findings are either fixed or recorded in the review log with a reason.
-- [ ] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` and `pnpm e2e` pass on a clean clone.
+- [x] AC1: `pnpm e2e` passes in Chromium for all 13 lessons, `/`, the 404 route and the `n` shortcut, with zero console errors or warnings.
+- [x] AC2: `docs/plan/review-log.md` lists every lesson with at least the per-beat checks from step 2 and every finding has a fix commit.
+- [x] AC3: axe reports no serious or critical issues on `/` and on the first and last beat of every lesson; every control and drag has a verified keyboard path.
+- [x] AC4: Lighthouse mobile scores are at least 95 performance and 100 accessibility on the three pages listed, with CLS 0.
+- [x] AC5: Every lesson route's first-load JS is under 180 kB gzipped with one lesson chunk; the engine budget tests pass.
+- [x] AC6: The Motion reviewer audit has been run and its findings are either fixed or recorded in the review log with a reason.
+- [x] AC7: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` and `pnpm e2e` pass on a clean clone.
