@@ -15,6 +15,10 @@ export interface Geometry {
   height: number;
   font: number;
   x0: number;
+  /** Centre of the rank column, left of the row labels. */
+  rankX: number;
+  /** Baseline of the rank column header, above the first row. */
+  headY: number;
   dayW: number;
   plotRight: number;
   rowY: Record<string, number>;
@@ -32,18 +36,20 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 /** Pixel layout for a canvas of `width` x `height`: Gantt rows on top, two load lanes below. */
 export function layout(tasks: Task[], width: number, height: number): Geometry {
   const font = clamp(Math.round(height / 28), 9, 12);
-  const x0 = font * 5.4;
+  const rankW = font * 2.4;
+  const x0 = rankW + font * 5.4;
   const plotRight = width - font * 1.2;
   const dayW = (plotRight - x0) / AXIS_DAYS;
 
   const axisH = font + 6;
+  const headH = font * 1.4;
   const gap = font;
-  const usable = height - axisH - gap * 1.6;
+  const usable = height - axisH - headH - gap * 1.6;
   const groups = new Set(tasks.map((t) => t.id[0])).size;
   const rowH = Math.min((usable * 0.6) / (tasks.length + (groups - 1) / 2), 44);
   const unit = Math.min((usable * 0.4) / (2 * LANE_UNITS), 28);
-  const total = rowH * (tasks.length + (groups - 1) / 2) + gap * 1.6 + unit * 2 * LANE_UNITS + axisH;
-  const top = Math.max(0, (height - total) / 2);
+  const total = headH + rowH * (tasks.length + (groups - 1) / 2) + gap * 1.6 + unit * 2 * LANE_UNITS + axisH;
+  const top = Math.max(0, (height - total) / 2) + headH;
 
   const rowY: Record<string, number> = {};
   let y = top;
@@ -62,6 +68,8 @@ export function layout(tasks: Task[], width: number, height: number): Geometry {
     height,
     font,
     x0,
+    rankX: rankW / 2,
+    headY: top - font * 0.45,
     dayW,
     plotRight,
     rowY,

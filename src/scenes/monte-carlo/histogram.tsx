@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { useSpot } from "@/components/lesson/spotlight";
 import { BIN_WIDTH } from "@/engine/monte-carlo/simulate";
 import type { Bin } from "@/engine/monte-carlo/types";
 import { FADE, linear } from "./scale";
@@ -19,6 +20,8 @@ const AXIS = 18;
 export interface HistogramProps {
   bins: Bin[];
   pert: number;
+  /** Show the dashed PERT marker. */
+  showPert: boolean;
   /** Shown once there are enough runs to read them. */
   quantiles: { p50: number; p80: number } | null;
   /** Finish of the roll on display; `key` restarts the drop. */
@@ -30,16 +33,20 @@ const TONES = {
   float: { line: "stroke-float", text: "fill-float" },
 };
 
-function Marker({ x, label, tone, row, side }: {
+function Marker({ x, label, tone, row, side, spot }: {
   x: number;
   label: string;
   tone: keyof typeof TONES;
   row: 0 | 1;
   side: "start" | "end";
+  /** Term id that lights this marker. */
+  spot: string;
 }) {
   const dashed = tone === "float";
+  const spotAttrs = useSpot(spot);
   return (
     <motion.g data-marker={label} initial={false} animate={{ x }}>
+      <g {...spotAttrs}>
       <line
         y1={row * 14}
         y2="100%"
@@ -55,24 +62,27 @@ function Marker({ x, label, tone, row, side }: {
       >
         {label}
       </text>
+      </g>
     </motion.g>
   );
 }
 
 /** Finish dates of all runs so far, in half-day bins. */
-export function Histogram({ bins, pert, quantiles, roll }: HistogramProps) {
+export function Histogram({ bins, pert, showPert, quantiles, roll }: HistogramProps) {
   const [ref, { width, height }] = useSize<HTMLDivElement>();
   const plot = Math.max(0, height - TOP - AXIS);
   const x = linear(X_MIN, X_MAX, 1, width - 1);
   const counts = new Map(bins.map((b) => [b.from, b.count]));
   const scale = Math.max(MIN_SCALE, ...bins.map((b) => b.count));
   const slot = Math.max(1, x(BIN_WIDTH + X_MIN) - x(X_MIN) - 1);
+  const binsSpot = useSpot("bins");
+  const rollSpot = useSpot("roll");
 
   return (
     <div ref={ref} className="absolute inset-0">
       {width > 0 && (
         <svg width={width} height={height} className="overflow-visible">
-          <g transform={`translate(0 ${TOP})`}>
+          <g transform={`translate(0 ${TOP})`} {...binsSpot}>
             {SLOTS.map((from) => (
               <motion.rect
                 key={from}
@@ -89,18 +99,24 @@ export function Histogram({ bins, pert, quantiles, roll }: HistogramProps) {
             ))}
           </g>
           <svg y={0} height={TOP + plot} className="overflow-visible">
-            <Marker x={x(pert)} label="PERT" tone="float" row={0} side="start" />
+            <AnimatePresence initial={false}>
+              {showPert && (
+                <motion.g key="pert" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE}>
+                  <Marker x={x(pert)} label="PERT" tone="float" row={0} side="start" spot="pert" />
+                </motion.g>
+              )}
+            </AnimatePresence>
             <AnimatePresence>
               {quantiles && (
                 <motion.g key="q" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE}>
-                  <Marker x={x(quantiles.p50)} label="P50" tone="accent" row={1} side="end" />
-                  <Marker x={x(quantiles.p80)} label="P80" tone="accent" row={1} side="start" />
+                  <Marker x={x(quantiles.p50)} label="P50" tone="accent" row={1} side="end" spot="p50" />
+                  <Marker x={x(quantiles.p80)} label="P80" tone="accent" row={1} side="start" spot="p80" />
                 </motion.g>
               )}
             </AnimatePresence>
           </svg>
           <g transform={`translate(0 ${TOP + plot})`}>
-            <line x1={0} x2={width} className="stroke-line" />
+            <line x1={0} x2={width} className="stroke-line" {...rollSpot} />
             {TICKS.filter((t) => width >= NARROW || t % 4 === 0).map((t) => (
               <text key={t} x={x(t)} y={13} textAnchor="middle" className="fill-muted text-[9px] tabular-nums lg:text-[11px]">
                 {t}
@@ -110,6 +126,7 @@ export function Histogram({ bins, pert, quantiles, roll }: HistogramProps) {
               d
             </text>
             {/* Own presence scope: the chart's initial={false} would otherwise skip the drop. */}
+            <g {...rollSpot}>
             <AnimatePresence>
               {roll && (
                 <motion.circle
@@ -126,6 +143,7 @@ export function Histogram({ bins, pert, quantiles, roll }: HistogramProps) {
                 />
               )}
             </AnimatePresence>
+            </g>
           </g>
         </svg>
       )}

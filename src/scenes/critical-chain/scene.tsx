@@ -41,12 +41,16 @@ const VIEWS = {
 };
 const CLASHES = clashes(TASKS, UNCONSTRAINED);
 type ViewId = keyof typeof VIEWS;
-const VIEW_BY_BEAT: ViewId[] = ["unconstrained", "feasible", "buffered", "buffered", "buffered"];
+const VIEW_BY_BEAT: ViewId[] = ["unconstrained", "feasible", "buffered", "buffered", "buffered", "buffered"];
 const FEVER_BEAT = 3;
-const TRY_BEAT = 4;
+const FEEDING_BEAT = 4;
+const TRY_BEAT = 5;
 const NO_FLOAT: Record<string, number> = {};
 const NO_CLASHES: typeof CLASHES = [];
-const INITIAL = { cms: 0, pages: 0 };
+const INITIAL = { cms: 0, pages: 0, design: 0 };
+const NO_LATE: Record<string, number> = {};
+/** The one feeding buffer: Design feeds Pages. */
+const FEEDING = HALF.feeding[0];
 const METHODS: { value: BufferMethod; label: string }[] = [
   { value: "half", label: "Half" },
   { value: "rss", label: "Root-sum-square" },
@@ -85,26 +89,39 @@ export function CriticalChainScene({ beat }: SceneProps) {
   const view = VIEWS[viewId];
   const buffered = viewId === "buffered";
   const fevering = beat >= FEVER_BEAT;
+  const feeding = beat === FEEDING_BEAT;
   const trying = beat >= TRY_BEAT;
   const activeMethod = trying ? method : "half";
   const buffers = activeMethod === "rss" ? RSS : HALF;
   const committed = buffered ? COMMITTED[activeMethod] : view.schedule.makespan;
 
   const status = useMemo(() => {
-    const reported = !fevering ? {} : trying ? overruns : { cms: overruns.cms };
+    // The fever beat reports CMS; the feeding beat reports Pages done after a late Design;
+    // the try beat reports CMS and Pages.
+    const reported = !fevering
+      ? {}
+      : trying
+        ? { cms: overruns.cms, pages: overruns.pages }
+        : feeding
+          ? { design: overruns.design, pages: 0 }
+          : { cms: overruns.cms };
     return fever(TASKS, reported, activeMethod);
-  }, [fevering, trying, overruns, activeMethod]);
+  }, [fevering, feeding, trying, overruns, activeMethod]);
   const consumed = fevering ? status.bufferUsed * buffers.project.days : 0;
 
   const reset = () => {
     setOverruns(INITIAL);
     setMethod("half");
   };
-  const isInitial = overruns.cms === 0 && overruns.pages === 0 && method === "half";
+  const isInitial =
+    overruns.cms === 0 && overruns.pages === 0 && overruns.design === 0 && method === "half";
+  const feedingLate = feeding ? { [FEEDING.from]: overruns.design } : NO_LATE;
 
   const label = [
     describe(viewId, buffers),
     `Committed date day ${committed}.`,
+    feeding &&
+      `${nameOf(FEEDING.from)} ${days(overruns.design)} late: ${days(Math.min(overruns.design, FEEDING.days))} of the ${days(FEEDING.days)} feeding buffer used.`,
     fevering &&
       `Fever zone ${status.zone}: ${pct(status.bufferUsed)} of the buffer used at ${pct(status.chainComplete)} of the chain complete.`,
   ]
@@ -137,9 +154,14 @@ export function CriticalChainScene({ beat }: SceneProps) {
       label={label}
       readouts={
         <>
-          <Readout label="Committed date" value={committed} format={dayLabel} />
           <Readout label="Chain" value={view.schedule.makespan} format={wholeDays} />
-          <Readout label="Buffer" value={buffered ? buffers.project.days : 0} format={wholeDays} />
+          <Readout
+            label="Buffer"
+            value={buffered ? buffers.project.days : 0}
+            format={wholeDays}
+            spot="project-buffer"
+          />
+          <Readout label="Committed date" value={committed} format={dayLabel} spot="commit" />
         </>
       }
       controls={
@@ -165,6 +187,18 @@ export function CriticalChainScene({ beat }: SceneProps) {
             />
             {resetButton}
           </>
+        ) : feeding ? (
+          <>
+            <Slider
+              label="Design overrun"
+              unit="days"
+              value={overruns.design}
+              min={0}
+              max={OVERRUN_MAX.design}
+              onChange={(design) => setOverruns((o) => ({ ...o, design }))}
+            />
+            {resetButton}
+          </>
         ) : fevering ? (
           <>
             {cmsSlider}
@@ -183,6 +217,7 @@ export function CriticalChainScene({ beat }: SceneProps) {
             buffers={buffers}
             showBuffers={buffered}
             consumed={consumed}
+            feedingLate={feedingLate}
             clashes={viewId === "unconstrained" ? CLASHES : NO_CLASHES}
             lane="developer"
             laneLabel="Developer"

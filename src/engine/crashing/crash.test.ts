@@ -67,3 +67,23 @@ describe("optimum", () => {
     expect(optimum(curve, overhead).days).toBe(days);
   });
 });
+
+describe("teaching facts", () => {
+  it("leaves Fabricate setting the pace while Graphics has float", () => {
+    const s = schedule(BOOTH);
+    expect(s.float.B).toBe(0);
+    expect(schedule(shorten(BOOTH, ["C"])).paths).toEqual([["A", "B", "D", "E"]]);
+  });
+
+  it("puts the cheapest total between the shortest and the original schedule", () => {
+    const best = optimum(curve, 800);
+    expect(best.days).toBeGreaterThan(curve[curve.length - 1].days);
+    expect(best.days).toBeLessThan(curve[0].days);
+  });
+
+  it("prices every step up to the optimum below overhead and the next one above", () => {
+    const i = curve.findIndex((p) => p.days === optimum(curve, 800).days);
+    expect(curve.slice(1, i + 1).every((p) => p.step!.cost < 800)).toBe(true);
+    expect(curve[i + 1].step!.cost).toBe(1300);
+  });
+});

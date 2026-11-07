@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useId, useRef } from "react";
+import { type SpotAttributes, useSpot, useSpots } from "@/components/lesson/spotlight";
 import type { Clash } from "@/engine/critical-chain/schedule";
 import type { Buffers, Chain, Link, ResourceId, Schedule, Task } from "@/engine/critical-chain/types";
 import { FADE, MOVE } from "./motion";
@@ -24,6 +25,8 @@ export interface GanttProps {
   showBuffers: boolean;
   /** Days of the project buffer already consumed. */
   consumed: number;
+  /** Days each feeding path's last task finished late, keyed by task id. */
+  feedingLate: Record<string, number>;
   clashes: Clash[];
   lane: ResourceId;
   laneLabel: string;
@@ -40,12 +43,24 @@ function band(i: number, n: number, thickness: number) {
 }
 
 export function Gantt(props: GanttProps) {
-  const { tasks, schedule, chain, float, buffers, showBuffers, consumed, finish } = props;
+  const { tasks, schedule, chain, float, buffers, showBuffers, consumed, feedingLate, finish } = props;
   const n = tasks.length;
   const onChain = new Set(chain.ids);
   const row = (id: string) => tasks.findIndex((t) => t.id === id);
   const end = schedule.makespan;
   const project = buffers.project.days;
+  // Elements that fade inline carry their tag on an inner child, because the
+  // inline opacity would beat the spotlight's dimming.
+  const paddedSpot = useSpot("padded");
+  const paddedChainSpot = useSpots(["padded", "chain"]);
+  const coreSpot = useSpot("core");
+  const coreChainSpot = useSpots(["core", "chain"]);
+  const floatSpot = useSpot("float");
+  const feedingSpot = useSpot("feeding-buffer");
+  const feedingUsedSpot = useSpots(["consumed", "feeding-buffer"]);
+  const projectSpot = useSpot("project-buffer");
+  const projectUsedSpot = useSpots(["consumed", "project-buffer"]);
+  const commitSpot = useSpot("commit");
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[auto_1fr] grid-rows-[1fr_auto_auto] gap-x-2 gap-y-1.5">
@@ -82,6 +97,7 @@ export function Gantt(props: GanttProps) {
           return [
             <motion.div
               key={`${t.id}-outer`}
+              {...(critical ? paddedChainSpot : paddedSpot)}
               data-outer={t.id}
               layout
               transition={MOVE}
@@ -90,6 +106,7 @@ export function Gantt(props: GanttProps) {
             />,
             <motion.div
               key={`${t.id}-core`}
+              {...(critical ? coreChainSpot : coreSpot)}
               data-bar={t.id}
               layout
               transition={MOVE}
@@ -108,11 +125,13 @@ export function Gantt(props: GanttProps) {
               layout
               transition={MOVE}
               aria-hidden
-              className="absolute border-x-2 border-float"
+              className="absolute"
               animate={{ opacity: days > 0 ? 1 : 0 }}
               style={{ ...band(i, n, 0.3), left: pct(at), width: pct(days) }}
             >
-              <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-float" />
+              <div {...floatSpot} className="absolute inset-0 border-x-2 border-float">
+                <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-float" />
+              </div>
             </motion.div>,
             <Tag
               key={`${t.id}-float-label`}
@@ -122,6 +141,7 @@ export function Gantt(props: GanttProps) {
               visible={days > 0}
               className="text-float"
               offset={-0.42}
+              spot={floatSpot}
             >
               {days}
             </Tag>,
@@ -131,6 +151,8 @@ export function Gantt(props: GanttProps) {
         {buffers.feeding.map((f) => {
           const at = schedule.start[f.before];
           const days = showBuffers ? f.days : 0;
+          // A late feeding task fills its buffer from the left, up to the buffer's size.
+          const used = showBuffers ? Math.min(feedingLate[f.from] ?? 0, f.days) : 0;
           const i = row(f.from);
           return [
             <motion.div
@@ -138,10 +160,24 @@ export function Gantt(props: GanttProps) {
               data-buffer="feeding"
               layout
               transition={MOVE}
-              className="absolute rounded-[0.3rem] border border-buffer bg-buffer/25"
+              className="absolute"
               animate={{ opacity: showBuffers ? 1 : 0 }}
               style={{ ...band(i, n, OTHER_THICKNESS), left: pct(at - days), width: pct(days) }}
-            />,
+            >
+              <div {...feedingSpot} className="size-full rounded-[0.3rem] border border-buffer bg-buffer/25" />
+            </motion.div>,
+            <motion.div
+              key={`${f.from}-feeding-used`}
+              data-feeding-used={used}
+              layout
+              transition={MOVE}
+              aria-hidden
+              className="absolute"
+              animate={{ opacity: used > 0 ? 1 : 0 }}
+              style={{ ...band(i, n, OTHER_THICKNESS), left: pct(at - days), width: pct(used) }}
+            >
+              <div {...feedingUsedSpot} className="hatch size-full rounded-l-[0.3rem] text-constraint" />
+            </motion.div>,
             <Tag
               key={`${f.from}-feeding-label`}
               at={at - days / 2}
@@ -150,6 +186,7 @@ export function Gantt(props: GanttProps) {
               visible={showBuffers}
               className="text-buffer"
               offset={-0.42}
+              spot={feedingSpot}
             >
               {f.days}
             </Tag>,
@@ -160,26 +197,31 @@ export function Gantt(props: GanttProps) {
           data-buffer="project"
           layout
           transition={MOVE}
-          className="absolute rounded-[0.3rem] border border-buffer bg-buffer/25"
+          className="absolute"
           animate={{ opacity: showBuffers ? 1 : 0 }}
           style={{
             ...band(row(chain.ids[chain.ids.length - 1]), n, CHAIN_THICKNESS),
             left: pct(end),
             width: pct(showBuffers ? project : 0),
           }}
-        />
+        >
+          <div {...projectSpot} className="size-full rounded-[0.3rem] border border-buffer bg-buffer/25" />
+        </motion.div>
         <motion.div
+          data-project-used={showBuffers ? Math.min(consumed, project) : 0}
           layout
           transition={MOVE}
           aria-hidden
-          className="hatch absolute rounded-l-[0.3rem] text-constraint"
+          className="absolute"
           animate={{ opacity: showBuffers && consumed > 0 ? 1 : 0 }}
           style={{
             ...band(row(chain.ids[chain.ids.length - 1]), n, CHAIN_THICKNESS),
             left: pct(end),
             width: pct(showBuffers ? Math.min(consumed, project) : 0),
           }}
-        />
+        >
+          <div {...projectUsedSpot} className="hatch size-full rounded-l-[0.3rem] text-constraint" />
+        </motion.div>
         <Tag
           at={end + project / 2}
           row={row(chain.ids[chain.ids.length - 1])}
@@ -187,11 +229,13 @@ export function Gantt(props: GanttProps) {
           visible={showBuffers}
           className="text-buffer"
           offset={-0.5}
+          spot={projectSpot}
         >
           {project}
         </Tag>
 
         <motion.div
+          {...commitSpot}
           layout
           transition={MOVE}
           aria-hidden
@@ -220,6 +264,7 @@ export function Gantt(props: GanttProps) {
           </motion.span>
         ))}
         <motion.span
+          {...commitSpot}
           layout
           transition={MOVE}
           className="absolute -ml-4 w-8 rounded-sm bg-accent text-center text-[0.7rem] font-semibold leading-4 tabular-nums text-surface"
@@ -239,6 +284,7 @@ function Tag({
   visible,
   offset,
   className,
+  spot,
   children,
 }: {
   at: number;
@@ -248,6 +294,8 @@ function Tag({
   /** Vertical shift from the row centre, as a share of the row. */
   offset: number;
   className: string;
+  /** Spotlight tag, carried by an inner span because the label fades inline. */
+  spot?: SpotAttributes;
   children: number;
 }) {
   return (
@@ -259,12 +307,13 @@ function Tag({
       className={`absolute -ml-4 w-8 -translate-y-1/2 text-center text-[0.65rem] font-semibold leading-none tabular-nums ${className}`}
       style={{ left: pct(at), top: `${((row + 0.5 + offset) / n) * 100}%` }}
     >
-      {children}
+      <span {...spot}>{children}</span>
     </motion.span>
   );
 }
 
 function Lane({ tasks, schedule, clashes, lane }: GanttProps) {
+  const clashSpot = useSpot("clash");
   const mine = tasks.filter((t) => t.resource === lane);
   return (
     <div className="relative h-4 rounded-sm bg-surface-2">
@@ -287,9 +336,14 @@ function Lane({ tasks, schedule, clashes, lane }: GanttProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={FADE}
-              className="hatch absolute inset-y-0 rounded-[0.2rem] border border-constraint text-constraint"
+              className="absolute inset-y-0"
               style={{ left: pct(c.from), width: pct(c.to - c.from) }}
-            />
+            >
+              <div
+                {...clashSpot}
+                className="hatch size-full rounded-[0.2rem] border border-constraint text-constraint"
+              />
+            </motion.div>
           ))}
       </AnimatePresence>
     </div>
@@ -300,6 +354,9 @@ function Arrows({ tasks, schedule, chain, buffers, showBuffers }: GanttProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { width, height } = useSize(ref);
   const id = useId();
+  const chainSpot = useSpot("chain");
+  const linkSpot = useSpot("dependency");
+  const resourceSpot = useSpots(["chain", "resource-link"]);
   const n = tasks.length;
   const x = (days: number) => (days / AXIS_DAYS) * width;
   const y = (taskId: string) => ((tasks.findIndex((t) => t.id === taskId) + 0.5) / n) * height;
@@ -344,6 +401,7 @@ function Arrows({ tasks, schedule, chain, buffers, showBuffers }: GanttProps) {
             return (
               <motion.path
                 key={`${l.from}-${l.to}`}
+                {...(critical ? chainSpot : linkSpot)}
                 initial={false}
                 animate={{ d: path(l) }}
                 transition={MOVE}
@@ -354,22 +412,25 @@ function Arrows({ tasks, schedule, chain, buffers, showBuffers }: GanttProps) {
               />
             );
           })}
-          <AnimatePresence initial={false}>
-            {resources.map((l) => (
-              <motion.path
-                key={`${l.from}-${l.to}-resource`}
-                initial={{ opacity: 0, d: path(l) }}
-                animate={{ opacity: 1, d: path(l) }}
-                exit={{ opacity: 0 }}
-                transition={MOVE}
-                fill="none"
-                strokeWidth={1.75}
-                strokeDasharray="4 3"
-                className="stroke-accent"
-                markerEnd={`url(#${id}-accent)`}
-              />
-            ))}
-          </AnimatePresence>
+          {/* The resource link fades inline, so its group carries the tag. */}
+          <g {...resourceSpot}>
+            <AnimatePresence initial={false}>
+              {resources.map((l) => (
+                <motion.path
+                  key={`${l.from}-${l.to}-resource`}
+                  initial={{ opacity: 0, d: path(l) }}
+                  animate={{ opacity: 1, d: path(l) }}
+                  exit={{ opacity: 0 }}
+                  transition={MOVE}
+                  fill="none"
+                  strokeWidth={1.75}
+                  strokeDasharray="4 3"
+                  className="stroke-accent"
+                  markerEnd={`url(#${id}-accent)`}
+                />
+              ))}
+            </AnimatePresence>
+          </g>
         </svg>
       )}
     </div>

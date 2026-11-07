@@ -137,7 +137,7 @@ export function CriticalPathScene({ beat }: SceneProps) {
       }
       readouts={
         <>
-          {beat >= 1 && <Readout label="Opening" value={result.duration} format={week} />}
+          {beat >= 1 && <Readout label="Opening" value={result.duration} format={week} spot="opening" />}
           {beat >= GANTT_BEAT && <Readout label="Critical paths" value={result.criticalPaths.length} />}
         </>
       }

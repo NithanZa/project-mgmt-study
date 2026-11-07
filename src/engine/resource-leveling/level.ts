@@ -71,13 +71,19 @@ export function levelWithinFloat(
 
 /**
  * Serial schedule generation: repeatedly take the eligible task the rule ranks first (ties keep
- * list order) and book it at the earliest day its resource has room for its whole run.
+ * list order) and book it at the earliest day its resource has room for its whole run. `order` is
+ * the sequence in which tasks were booked.
  */
-export function level(tasks: Task[], capacities: Capacities, rule: Rule): Schedule {
+export function level(
+  tasks: Task[],
+  capacities: Capacities,
+  rule: Rule,
+): { schedule: Schedule; order: string[] } {
   const { rows } = cpm(tasks);
   const rank = (t: Task) => (rule === "min-lst" ? rows[t.id].ls : t.days);
   const booked: Record<Task["resource"], number[]> = { designer: [], developer: [] };
   const schedule: Schedule = {};
+  const order: string[] = [];
 
   while (Object.keys(schedule).length < tasks.length) {
     const eligible = tasks.filter((t) => !(t.id in schedule) && t.deps.every((d) => d in schedule));
@@ -91,6 +97,7 @@ export function level(tasks: Task[], capacities: Capacities, rule: Rule): Schedu
     while (!free(start)) start++;
     for (let d = start; d < start + t.days; d++) load[d] = (load[d] ?? 0) + 1;
     schedule[t.id] = { start, end: start + t.days };
+    order.push(t.id);
   }
-  return schedule;
+  return { schedule, order };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useSpotlight } from "@/components/lesson/spotlight";
 import type { SweepPoint } from "@/engine/kanban/sweep";
 import { useSize } from "./use-size";
 
@@ -15,6 +16,10 @@ export interface SweepChartProps {
   noisy: SweepPoint[];
   variability: boolean;
   limit: number;
+  /** The limit where cycle time bottoms out without variability. */
+  floor: number;
+  /** The limit that starves the board under variability. */
+  starves: number;
 }
 
 interface Panel {
@@ -25,8 +30,15 @@ interface Panel {
   format: (n: number) => string;
 }
 
-export function SweepChart({ steady, noisy, variability, limit }: SweepChartProps) {
+export function SweepChart({ steady, noisy, variability, limit, floor, starves }: SweepChartProps) {
   const [ref, { width, height }] = useSize<HTMLDivElement>();
+  const spotlight = useSpotlight();
+  // Each point answers to the terms naming its limit; the rest share a base tag so they dim.
+  const pointSpot = (l: number) => {
+    const ids = [l === floor && "floor", l === starves && "starves"].filter((id): id is string => !!id);
+    if (ids.length === 0) ids.push("point");
+    return { "data-spot": ids.join(" "), "data-lit": spotlight !== null && ids.includes(spotlight) ? "" : undefined };
+  };
   const points = variability ? noisy : steady;
   const n = points.length;
   const w = Math.max(0, width - M.left - M.right);
@@ -70,6 +82,20 @@ export function SweepChart({ steady, noisy, variability, limit }: SweepChartProp
                   animate={{ opacity: variability ? 1 : 0 }}
                   transition={FADE}
                 />
+                {p.key === "throughput" && (
+                  <motion.text
+                    data-steady-label
+                    x={x(n)}
+                    y={y(steady[n - 1][p.key]) - 6}
+                    textAnchor="end"
+                    className="fill-muted text-[10px]"
+                    initial={false}
+                    animate={{ opacity: variability ? 1 : 0 }}
+                    transition={FADE}
+                  >
+                    no variability
+                  </motion.text>
+                )}
                 <motion.path
                   className="fill-none stroke-accent"
                   strokeWidth={2.5}
@@ -79,6 +105,7 @@ export function SweepChart({ steady, noisy, variability, limit }: SweepChartProp
                 {points.map((q) => (
                   <motion.g
                     key={q.limit}
+                    {...pointSpot(q.limit)}
                     data-limit={q.limit}
                     data-value={q[p.key].toFixed(2)}
                     initial={false}

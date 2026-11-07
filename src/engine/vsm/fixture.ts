@@ -18,9 +18,9 @@ const capWait =
     steps.map((s) => (ids.includes(s.id) ? { ...s, waitDays: Math.min(s.waitDays, days) } : s));
 
 export const IMPROVEMENTS: readonly Improvement[] = [
-  { id: "takeHomeFastReview", label: "Take-home 1 d", apply: capWait(["takeHome"], 1) },
-  { id: "onsiteWithinTwoDays", label: "Onsite 2 d", apply: capWait(["onsite"], 2) },
-  { id: "sameDayDebrief", label: "Debrief 0 d", apply: capWait(["debrief"], 0) },
-  { id: "offerApprovalOneDay", label: "Offer 1 d", apply: capWait(["offer"], 1) },
-  { id: "screensWithinOneDay", label: "Screens 1 d", apply: capWait(["resume", "phone"], 1) },
+  { id: "takeHomeFastReview", label: "Take-home wait 1 d", apply: capWait(["takeHome"], 1) },
+  { id: "onsiteWithinTwoDays", label: "Onsite wait 2 d", apply: capWait(["onsite"], 2) },
+  { id: "sameDayDebrief", label: "Debrief wait 0 d", apply: capWait(["debrief"], 0) },
+  { id: "offerApprovalOneDay", label: "Offer wait 1 d", apply: capWait(["offer"], 1) },
+  { id: "screensWithinOneDay", label: "Screen waits 1 d", apply: capWait(["resume", "phone"], 1) },
 ];

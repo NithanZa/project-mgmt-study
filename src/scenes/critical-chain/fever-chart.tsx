@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { useRef } from "react";
+import { useSpot } from "@/components/lesson/spotlight";
 import { type Fever, ZONE_LINES } from "@/engine/critical-chain/fever";
 import type { FeverPoint, Zone } from "@/engine/critical-chain/types";
 import { pct } from "@/lib/format";
@@ -25,6 +26,12 @@ const lineAt = (line: { at0: number; slope: number }, c: number) => line.at0 + l
 
 export function FeverChart({ status, points }: { status: Fever; points: number }) {
   const ref = useRef<HTMLDivElement>(null);
+  const zoneSpot: Record<Zone, ReturnType<typeof useSpot>> = {
+    green: useSpot("zone-ok"),
+    yellow: useSpot("zone-watch"),
+    red: useSpot("zone-act"),
+  };
+  const consumedSpot = useSpot("consumed");
   const { width, height } = useSize(ref);
   const compact = height < COMPACT_HEIGHT;
   const m = compact ? COMPACT_MARGIN : MARGIN;
@@ -65,11 +72,12 @@ export function FeverChart({ status, points }: { status: Fever; points: number }
       {width > 0 && h > 0 && (
         <svg width={width} height={height} aria-hidden className="block overflow-visible">
           {bands.map(([z, pts]) => (
-            <polygon key={z} points={poly(pts)} className={ZONE_STYLE[z].band} />
+            <polygon key={z} {...zoneSpot[z]} points={poly(pts)} className={ZONE_STYLE[z].band} />
           ))}
           {bandLabels.map(([z, c, u]) => (
             <text
               key={z}
+              {...zoneSpot[z]}
               data-zone-label={z}
               x={compact ? X(c) + 4 : X(c)}
               y={Y(u)}
@@ -115,7 +123,7 @@ export function FeverChart({ status, points }: { status: Fever; points: number }
           ))}
           {!compact && (
             <>
-              <text x={X(0) - 6} y={m.top - 10} className="fill-muted text-[0.65rem]">
+              <text {...consumedSpot} x={X(0) - 6} y={m.top - 10} className="fill-muted text-[0.65rem]">
                 Buffer used
               </text>
               <text x={X(1)} y={Y(0) + 26} textAnchor="end" className="fill-muted text-[0.65rem]">

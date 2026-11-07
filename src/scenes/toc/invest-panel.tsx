@@ -1,7 +1,9 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useSpot } from "@/components/lesson/spotlight";
 import { Button } from "@/components/ui/button";
+import { OVEN } from "@/engine/toc/fixture";
 import type { Station } from "@/lib/line-sim";
 import { COLUMNS } from "./line";
 
@@ -17,6 +19,8 @@ export interface InvestPanelProps {
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
 
 export function InvestPanel({ stations, deltas, invested, tried, onInvest }: InvestPanelProps) {
+  // The lit button also draws a ring, so it stands out from the dimmed ones.
+  const ovenSpot = useSpot("elevate");
   return (
     <div className={`${COLUMNS} w-full items-end`}>
       <span className="pb-1 text-xs leading-tight text-muted">Invest +50% in</span>
@@ -39,10 +43,11 @@ export function InvestPanel({ stations, deltas, invested, tried, onInvest }: Inv
               )}
             </span>
             <Button
+              {...(s.id === OVEN && ovenSpot)}
               aria-pressed={invested === s.id}
               aria-label={`Invest +50% in ${s.name}${shown ? `, throughput ${signed(delta)} per hour` : ""}`}
               onClick={() => onInvest(s.id)}
-              className={`h-8! justify-center px-0! text-xs sm:h-9! ${invested === s.id ? "border-accent bg-accent-soft" : ""}`}
+              className={`h-8! justify-center px-0! text-xs sm:h-9! data-lit:ring-2 data-lit:ring-accent data-lit:ring-offset-1 data-lit:ring-offset-surface ${invested === s.id ? "border-accent bg-accent-soft" : ""}`}
             >
               {s.name}
             </Button>

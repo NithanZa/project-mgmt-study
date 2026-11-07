@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { simulateLine, type LineConfig } from "@/lib/line-sim";
-import { drum, push } from "./config";
+import { INSURED, ROPE, TRY_IT, drum, push } from "./config";
 import { DAYS, WELD_INDEX } from "./fixture";
-import { bufferSweep, meansOverSeeds } from "./sweep";
+import { bufferSweep, knee, meansOverSeeds } from "./sweep";
 
 describe("drum-buffer-rope machine shop", () => {
   const rows: [string, LineConfig, number, number, number, number][] = [
@@ -47,5 +47,11 @@ describe("drum-buffer-rope machine shop", () => {
     expect(at(18).drumUtilization - at(12).drumUtilization).toBeLessThan(0.05);
     for (const b of [6, 9, 12, 15]) expect(at(b + 3).cycleTime - at(b).cycleTime).toBeGreaterThan(0.5);
     expect((at(18).cycleTime - at(6).cycleTime) / 4).toBeCloseTo(0.83, 1);
+  });
+
+  it("the knee sits at the insured buffer and moves left as variability falls", () => {
+    expect(knee(bufferSweep(INSURED.variability))).toBe(INSURED.bufferTarget);
+    expect(knee(bufferSweep(TRY_IT.variability))).toBe(8);
+    expect(knee(bufferSweep(ROPE.variability))).toBe(ROPE.bufferTarget);
   });
 });

@@ -1,5 +1,13 @@
 import { cpm } from "./cpm";
-import { RESOURCES, type Capacities, type Resource, type Rule, type Schedule, type Task } from "./types";
+import {
+  RESOURCES,
+  type Capacities,
+  type Placement,
+  type Resource,
+  type Rule,
+  type Schedule,
+  type Task,
+} from "./types";
 
 export type Priority = (a: Task, b: Task) => number;
 
@@ -9,6 +17,35 @@ export type Priority = (a: Task, b: Task) => number;
  * unit it needs is free for its whole duration.
  */
 export function serialSgs(tasks: Task[], capacities: Capacities, priority: Priority): Schedule {
+  return generate(tasks, capacities, priority);
+}
+
+export interface SgsTrace {
+  /** Task ids in the order they were placed. */
+  order: string[];
+  /** `placed[k]`: the placements after `k` steps, in task-list order (`placed[0]` is empty). */
+  placed: Schedule[];
+}
+
+/** The serial generator under a priority rule, recorded one placement at a time. */
+export function serialSgsTrace(tasks: Task[], capacities: Capacities, rule: Rule): SgsTrace {
+  const order: string[] = [];
+  const starts = new Map<string, Placement>();
+  const placed: Schedule[] = [[]];
+  generate(tasks, capacities, ruleComparator(rule, tasks), (p) => {
+    order.push(p.id);
+    starts.set(p.id, p);
+    placed.push(tasks.flatMap((t) => starts.get(t.id) ?? []));
+  });
+  return { order, placed };
+}
+
+function generate(
+  tasks: Task[],
+  capacities: Capacities,
+  priority: Priority,
+  onPlace?: (placement: Placement) => void,
+): Schedule {
   const finish = new Map<string, number>();
   const used: Record<Resource, number[]> = { programmer: [], artist: [] };
   const starts = new Map<string, number>();
@@ -39,6 +76,7 @@ export function serialSgs(tasks: Task[], capacities: Capacities, priority: Prior
     }
     starts.set(pick.id, start);
     finish.set(pick.id, start + pick.days);
+    onPlace?.({ id: pick.id, start, finish: start + pick.days });
   }
   return tasks.map((t) => ({ id: t.id, start: starts.get(t.id) ?? 0, finish: finish.get(t.id) ?? 0 }));
 }
@@ -74,7 +112,8 @@ export function ruleComparator(rule: Rule, tasks: Task[]): Priority {
   return (a, b) => key(a) - key(b) || (index.get(a.id) ?? 0) - (index.get(b.id) ?? 0);
 }
 
-function ruleKey(rule: Rule, tasks: Task[]): (t: Task) => number {
+/** The value a rule sorts by (smaller goes first); `input-order` gives every task 0. */
+export function ruleKey(rule: Rule, tasks: Task[]): (t: Task) => number {
   switch (rule) {
     case "min-lst": {
       const { latestStart } = cpm(tasks);

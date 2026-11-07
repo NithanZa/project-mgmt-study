@@ -16,9 +16,18 @@ import { Network } from "./network";
 
 const CURVE = crashCurve(BOOTH);
 /** Cheapest-first crashes already made when each beat opens. */
-const PRESET = [0, 1, 2, 2, 2];
-const TOTAL_FROM = 3;
+const PRESET = [0, 1, 2, 2, 2, 2];
+const TWO_PATHS = 2;
+const OVERHEAD_FROM = 3;
+const TOTAL_FROM = 4;
+const TRY = 5;
 const GRAPHICS = "C";
+/** On the two-paths beat: Design sits on both paths; Fabricate and Graphics are one per path. */
+const TWO_PATH_SPOTS = [
+  { id: "A", spot: "shared" },
+  { id: "B", spot: "pair" },
+  { id: "C", spot: "pair" },
+];
 
 interface State {
   beat: number;
@@ -62,6 +71,7 @@ export function CrashingScene({ beat }: SceneProps) {
   const direct = spent(BOOTH, tasks);
   const recent = prev ? tasks.filter((t, i) => t.days < prev[i].days) : [];
   const graphics = tasks.find((t) => t.id === GRAPHICS)!;
+  const showOverhead = beat >= OVERHEAD_FROM;
   const showTotal = beat >= TOTAL_FROM;
 
   const label =
@@ -87,7 +97,7 @@ export function CrashingScene({ beat }: SceneProps) {
           Undo
         </Button>
         <Button onClick={() => setState((s) => initial(s.beat, s.flashes, true))}>Reset</Button>
-        {showTotal && (
+        {beat === TRY && (
           <Slider
             label="Overhead"
             unit="per day"
@@ -97,7 +107,7 @@ export function CrashingScene({ beat }: SceneProps) {
             onChange={(v) => setState((s) => ({ ...s, overhead: v }))}
           />
         )}
-        {beat === 4 && (
+        {beat === TRY && (
           <Button
             disabled={graphics.days === graphics.minDays}
             onClick={() => setState((s) => push(s, shorten(top(s), [GRAPHICS])))}
@@ -116,17 +126,34 @@ export function CrashingScene({ beat }: SceneProps) {
         <>
           <Readout label="Days" value={duration} format={dayCount} />
           <Readout label="Direct cost" value={direct} format={money} />
-          {showTotal && <Readout label="Total cost" value={direct + overhead * duration} format={money} />}
+          {showTotal && (
+            <Readout label="Total cost" value={direct + overhead * duration} format={money} spot="total" />
+          )}
         </>
       }
       controls={controls}
     >
       <div data-canvas className="flex h-full flex-col gap-2">
-        <div className={`min-h-0 flex-1 ${showTotal ? "max-lg:hidden" : ""}`}>
-          <Network tasks={tasks} base={BOOTH} paths={paths} recent={recent.map((t) => t.id)} flash={flash} />
+        {/* Phones show one panel: the network until overhead enters, then the chart. */}
+        <div className={`min-h-0 flex-1 ${showOverhead ? "max-lg:hidden" : ""}`}>
+          <Network
+            tasks={tasks}
+            base={BOOTH}
+            paths={paths}
+            recent={recent.map((t) => t.id)}
+            flash={flash}
+            spotTasks={beat === TWO_PATHS ? TWO_PATH_SPOTS : undefined}
+          />
         </div>
-        <div className={`min-h-0 flex-[1.3] ${showTotal ? "" : "max-lg:hidden"}`}>
-          <CostChart points={points} totals={totals} best={best} showTotal={showTotal} />
+        <div className={`min-h-0 flex-[1.3] ${showOverhead ? "" : "max-lg:hidden"}`}>
+          <CostChart
+            points={points}
+            totals={totals}
+            best={best}
+            overhead={overhead}
+            showOverhead={showOverhead}
+            showTotal={showTotal}
+          />
         </div>
       </div>
     </SceneFrame>

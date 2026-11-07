@@ -45,6 +45,16 @@ describe("fast tracking schedule", () => {
     expect(schedule([19, 14, 19]).expected).toBeCloseTo(77.17, 2);
   });
 
+  it("pins the predict numbers: halfway nets half its saving, max overlap gives most of it back", () => {
+    const halfway = schedule([10, 0, 0]).edges[0];
+    expect(halfway.net).toBe(halfway.saved / 2);
+    const maxed = schedule(MAX_OVERLAP);
+    expect(maxed.planned).toBe(28);
+    expect(maxed.expectedRework).toBeCloseTo(49.17, 2);
+    expect(maxed.expected).toBeLessThan(80);
+    expect(80 - maxed.expected).toBeLessThan(5);
+  });
+
   it("never lets an overlap exceed MAX_OVERLAP or go negative", () => {
     const s = schedule([30, 30, 30]);
     expect(s.edges.map((e) => e.saved)).toEqual(MAX_OVERLAP);

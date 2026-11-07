@@ -26,8 +26,8 @@ interface Setup {
   outageFrom: number | null;
 }
 
-const BEAT = { push: 0, limit: 1, little: 2, outage: 3, sweep: 4 } as const;
-const SLIDER_BEATS: number[] = [BEAT.limit, BEAT.little, BEAT.sweep];
+const BEAT = { push: 0, limit: 1, cfd: 2, little: 3, outage: 4, sweep: 5 } as const;
+const SLIDER_BEATS: number[] = [BEAT.limit, BEAT.cfd, BEAT.little, BEAT.sweep];
 /** Days left after an outage for the board to recover before the run ends. */
 const RECOVERY = 15;
 const FADE = { duration: 0.18, ease: "easeOut" } as const;
@@ -58,7 +58,8 @@ export function KanbanScene({ beat }: SceneProps) {
   const config = useMemo(() => toConfig(setup), [setup]);
   const result = useMemo(() => simulateLine(config), [config]);
   const sweeps = useMemo(() => ({ steady: limitSweep(0), noisy: limitSweep(VARIABILITY) }), []);
-  const playback = usePlayback(String(beat), DAYS);
+  // From the flow diagram to Little's law the run keeps playing, so the gaps are the only change.
+  const playback = usePlayback(String(beat === BEAT.little ? BEAT.cfd : beat), DAYS);
   const { tick } = playback;
   const flow = flowAt(result, tick);
   const columns = columnsAt(config, result, tick);
@@ -76,17 +77,24 @@ export function KanbanScene({ beat }: SceneProps) {
     playback.restart();
   };
 
-  const panel = beat === BEAT.little ? "cfd" : beat === BEAT.sweep ? "sweep" : null;
-  const label = `Kanban board, ${setup.limit === null ? "no WIP limit" : `WIP limit ${setup.limit} per column`}${setup.variability ? ", variability on" : ""}${testDown ? ", Test down" : ""}. Day ${tick + 1} of ${DAYS}: WIP ${flow.wip}, throughput ${one(flow.throughput)} per day, cycle time ${one(flow.cycleTime)} days.`;
+  const panel = beat === BEAT.cfd || beat === BEAT.little ? "cfd" : beat === BEAT.sweep ? "sweep" : null;
+  const showGaps = beat === BEAT.little;
+  const shown =
+    panel === "cfd"
+      ? `, cumulative flow diagram${showGaps ? " with the WIP and cycle-time gaps" : ""}`
+      : panel === "sweep"
+        ? ", limit sweep chart"
+        : "";
+  const label = `Kanban board, ${setup.limit === null ? "no WIP limit" : `WIP limit ${setup.limit} per column`}${setup.variability ? ", variability on" : ""}${testDown ? ", Test down" : ""}${shown}. Day ${tick + 1} of ${DAYS}: WIP ${flow.wip}, throughput ${one(flow.throughput)} per day, cycle time ${one(flow.cycleTime)} days.`;
 
   return (
     <SceneFrame
       label={label}
       readouts={
         <>
-          <Readout label="WIP" value={flow.wip} format={whole} />
-          <Readout label="Throughput / day" value={flow.throughput} format={one} />
-          <Readout label="Cycle time days" value={flow.cycleTime} format={one} />
+          <Readout label="WIP" value={flow.wip} format={whole} spot="wip" />
+          <Readout label="Throughput / day" value={flow.throughput} format={one} spot="finish" />
+          <Readout label="Cycle time days" value={flow.cycleTime} format={one} spot="age" />
         </>
       }
       controls={
@@ -127,6 +135,7 @@ export function KanbanScene({ beat }: SceneProps) {
           items={result.items}
           tick={tick}
           interval={playback.interval}
+          downId={OUTAGE.station}
           className={panel ? "hidden flex-2 sm:grid" : "flex-1"}
         />
         <AnimatePresence initial={false} mode="popLayout">
@@ -140,9 +149,22 @@ export function KanbanScene({ beat }: SceneProps) {
               transition={FADE}
             >
               {panel === "cfd" ? (
-                <Cfd stations={BOARD} result={result} tick={tick} throughput={flow.throughput} interval={playback.interval} />
+                <Cfd
+                  stations={BOARD}
+                  result={result}
+                  tick={tick}
+                  throughput={flow.throughput}
+                  interval={playback.interval}
+                  showGaps={showGaps}
+                />
               ) : (
-                <SweepChart {...sweeps} variability={setup.variability} limit={setup.limit ?? 1} />
+                <SweepChart
+                  {...sweeps}
+                  variability={setup.variability}
+                  limit={setup.limit ?? 1}
+                  floor={sweeps.steady[1].limit}
+                  starves={sweeps.noisy[1].limit}
+                />
               )}
             </motion.div>
           )}
