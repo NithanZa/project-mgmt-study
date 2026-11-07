@@ -1,6 +1,7 @@
 import { test as base, expect, type ConsoleMessage, type Page } from "@playwright/test";
 import { LESSONS, nextLesson } from "@/content/meta";
 import type { Beat, Lesson, Slug } from "@/content/types";
+import { BASE_PATH } from "@/lib/site";
 import { lesson as cpm } from "@/content/lessons/cpm";
 import { lesson as pert } from "@/content/lessons/pert";
 import { lesson as monteCarlo } from "@/content/lessons/monte-carlo";
@@ -23,7 +24,7 @@ const test = base.extend<{ allowedConsoleUrls: string[]; consoleGuard: void }>({
   allowedConsoleUrls: [[], { option: true }],
   consoleGuard: [
     async ({ page, baseURL, allowedConsoleUrls }, use) => {
-      const allowed = new Set([FAVICON, ...allowedConsoleUrls].map((p) => new URL(p, baseURL).href));
+      const allowed = new Set([FAVICON, ...allowedConsoleUrls.map(at)].map((p) => new URL(p, baseURL).href));
       const problems: string[] = [];
       page.on("console", (msg: ConsoleMessage) => {
         if (msg.type() !== "error" && msg.type() !== "warning") return;
@@ -60,8 +61,13 @@ function loadLesson(slug: Slug): Lesson {
   return LESSON_MODULES[slug];
 }
 
+/** A course path as served, under the base path. */
+function at(path: string): string {
+  return path === "/" ? BASE_PATH : `${BASE_PATH}${path}`;
+}
+
 async function open(page: Page, path: string) {
-  const response = await page.goto(path);
+  const response = await page.goto(at(path));
   await page.waitForLoadState("networkidle");
   return response;
 }
@@ -155,7 +161,7 @@ async function exerciseBeat(page: Page, beat: Beat) {
 
 test("home lists all 13 lessons", async ({ page }) => {
   await open(page, "/");
-  await expect(page.locator('main section ul > li > a[href^="/learn/"]')).toHaveCount(13);
+  await expect(page.locator(`main section ul > li > a[href^="${at("/learn/")}"]`)).toHaveCount(13);
 });
 
 test.describe("unknown lesson", () => {
@@ -234,7 +240,7 @@ for (const meta of LESSONS) {
     const next = nextLesson(meta.slug);
     if (next) {
       await expect(nextLink).toHaveText(`Next: ${next.number} · ${next.title} →`);
-      await expect(nextLink).toHaveAttribute("href", `/learn/${next.slug}`);
+      await expect(nextLink).toHaveAttribute("href", at(`/learn/${next.slug}`));
     } else {
       await expect(nextLink).toHaveCount(0);
     }
