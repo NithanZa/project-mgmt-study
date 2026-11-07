@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useSpot, useSpots } from "@/components/lesson/spotlight";
 import type { Demand } from "@/engine/resource-leveling/profile";
 import { RESOURCES, type Capacities, type Resource } from "@/engine/resource-leveling/types";
 import { AXIS_DAYS, LANE_UNITS, type Geometry } from "./geometry";
@@ -22,6 +23,9 @@ export interface LanesProps {
 /** One block per person-day; blocks above the capacity line are hatched. */
 export function Lanes({ load, capacities, geo, hatch }: LanesProps) {
   const { x0, dayW, font, plotRight } = geo;
+  const daySpot = useSpot("person-day");
+  const overSpot = useSpots(["overload", "person-day"]);
+  const capSpot = useSpot("capacity");
   return (
     <g aria-hidden>
       {RESOURCES.map((r) => {
@@ -51,26 +55,33 @@ export function Lanes({ load, capacities, geo, hatch }: LanesProps) {
               UNITS.map((k) => {
                 const units = load[r][d] ?? 0;
                 const over = k >= cap;
+                // Tagged on a wrapper: the block's own opacity fade is inline and would beat the spotlight.
                 return (
-                  <motion.rect
-                    key={`${d}-${k}`}
-                    x={x0 + d * dayW + 1.5}
-                    y={lane.bottom - (k + 1) * lane.unit + 1}
-                    width={dayW - 3}
-                    height={lane.unit - 2}
-                    rx={2}
-                    data-overload={over && k < units ? `${r}-${d}` : undefined}
-                    fill={over ? `url(#${hatch})` : undefined}
-                    strokeWidth={over ? 1.25 : 0}
-                    className={over ? "stroke-constraint" : BLOCK_CLASS[r]}
-                    initial={false}
-                    animate={{ opacity: k < units ? 1 : 0 }}
-                    transition={FADE}
-                  />
+                  <g key={`${d}-${k}`} {...(over ? overSpot : daySpot)}>
+                    <motion.rect
+                      x={x0 + d * dayW + 1.5}
+                      y={lane.bottom - (k + 1) * lane.unit + 1}
+                      width={dayW - 3}
+                      height={lane.unit - 2}
+                      rx={2}
+                      data-overload={over && k < units ? `${r}-${d}` : undefined}
+                      fill={over ? `url(#${hatch})` : undefined}
+                      strokeWidth={over ? 1.25 : 0}
+                      className={over ? "stroke-constraint" : BLOCK_CLASS[r]}
+                      initial={false}
+                      animate={{ opacity: k < units ? 1 : 0 }}
+                      transition={FADE}
+                    />
+                  </g>
                 );
               }),
             )}
-            <motion.g initial={false} animate={{ y: lane.bottom - cap * lane.unit }}>
+            <motion.g
+              {...capSpot}
+              data-cap={cap}
+              initial={false}
+              animate={{ y: lane.bottom - cap * lane.unit }}
+            >
               <line x1={x0} x2={plotRight} strokeWidth={1.5} className="stroke-fg" />
               <text
                 x={plotRight + 3}

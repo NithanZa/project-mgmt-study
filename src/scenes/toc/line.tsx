@@ -1,7 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { DEMAND } from "@/engine/toc/fixture";
+import { AnimatePresence, motion, useReducedMotion, type Transition } from "motion/react";
+import { useSpot, useSpots, type SpotAttributes } from "@/components/lesson/spotlight";
+import { DEMAND, OVEN } from "@/engine/toc/fixture";
 import { MARKET, type LineConfig, type LineResult } from "@/lib/line-sim";
 
 /** Market plus five stations; the invest panel reuses it to align its buttons with the tiles. */
@@ -61,67 +62,107 @@ export function Line({ config, result, tick, interval, playing, revealConstraint
   // Reduced motion keeps opacity animations, so the looping pulse is switched off by hand.
   const reduce = useReducedMotion();
   const pulse = playing && !reduce;
+  const exit = config.stations[config.stations.length - 1]?.id;
   return (
     <div className={`${COLUMNS} min-h-0 flex-1`}>
-      {columnsAt(config, result, tick).map((col, c) => {
-        const isConstraint = revealConstraint && result.constraint === col.id;
-        const selectable = onSelect !== undefined && col.id !== MARKET;
-        const Tile = selectable ? "button" : "div";
-        return (
-          <div key={col.id} data-column={col.id} className="flex min-h-0 min-w-0 flex-col gap-1">
-            <Pile waiting={col.waiting} />
-            <Tile
-              {...(selectable && {
-                type: "button" as const,
-                "aria-pressed": selected === col.id,
-                onClick: () => onSelect(col.id),
-              })}
-              className={`relative flex flex-col items-center rounded-md bg-surface-2 px-0.5 pt-1 pb-2.5 sm:pt-2 sm:pb-4 ${isConstraint ? "border-2 border-constraint" : col.id === MARKET ? "border border-dashed border-line" : "border border-line"} ${selectable ? "cursor-pointer focus-visible:outline-2 focus-visible:outline-accent" : ""} ${selected === col.id ? "ring-2 ring-accent ring-offset-1 ring-offset-surface" : ""}`}
-            >
-              {isConstraint && (
-                <motion.span
-                  aria-hidden
-                  className="pointer-events-none absolute -inset-1 rounded-[0.9rem] border-2 border-constraint"
-                  initial={{ opacity: 0 }}
-                  animate={pulse ? { opacity: [0.1, 0.55, 0.1] } : { opacity: 0.3 }}
-                  transition={pulse ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : FADE}
-                />
-              )}
-              {isConstraint && (
-                <motion.span
-                  layoutId="toc-constraint-tag"
-                  className="absolute -top-3 z-10 rounded-full bg-constraint px-1.5 text-[9px] leading-3.5 font-medium text-surface sm:-top-2.5 sm:text-[10px] sm:leading-4"
-                >
-                  constraint
-                </motion.span>
-              )}
-              <span className="text-[10px] leading-tight font-medium sm:text-xs">{col.name}</span>
-              <Dial value={col.capacity} />
-              {selectable && <span className="sr-only">per hour</span>}
-              <span className="absolute inset-x-0 bottom-1 flex justify-center sm:bottom-1.5">
-                {col.flow > 0 && (
-                  <motion.span
-                    data-batch
-                    layoutId={`toc-batch-${tick - c}`}
-                    transition={{ layout: batch }}
-                    className="block h-1 rounded-full bg-accent sm:h-1.5"
-                    style={{ width: `${Math.min(1, col.flow / FLOW_SCALE) * 85}%` }}
-                  />
-                )}
-              </span>
-            </Tile>
-            <Busy value={col.busy} showLabel={showBusy} />
-          </div>
-        );
-      })}
+      {columnsAt(config, result, tick).map((col, c) => (
+        <StationColumn
+          key={col.id}
+          col={col}
+          batchKey={tick - c}
+          batch={batch}
+          pulse={pulse}
+          isConstraint={revealConstraint && result.constraint === col.id}
+          isExit={col.id === exit}
+          showBusy={showBusy}
+          selectable={onSelect !== undefined && col.id !== MARKET}
+          selected={selected === col.id}
+          onSelect={onSelect}
+        />
+      ))}
     </div>
   );
 }
 
-function Pile({ waiting }: { waiting: number }) {
+interface StationColumnProps {
+  col: Column;
+  /** Batches keep their key as they move a column per tick, so the layout animation carries them along. */
+  batchKey: number;
+  batch: Transition;
+  pulse: boolean;
+  isConstraint: boolean;
+  isExit: boolean;
+  showBusy: boolean;
+  selectable: boolean;
+  selected: boolean;
+  onSelect?: (stationId: string) => void;
+}
+
+const OVEN_PILE = ["pile", "wip"];
+const PILE = ["wip"];
+
+function StationColumn({ col, batchKey, batch, pulse, isConstraint, isExit, showBusy, selectable, selected, onSelect }: StationColumnProps) {
+  const isMarket = col.id === MARKET;
+  const pileSpot = useSpots(col.id === OVEN ? OVEN_PILE : PILE);
+  const ordersSpot = useSpot("orders");
+  const dialSpot = useSpot(isMarket ? "orders" : "capacity");
+  const batchSpot = useSpot(isMarket ? "release" : isExit ? "throughput" : "batch");
+  const constraintSpot = useSpot("constraint");
+  const Tile = selectable ? "button" : "div";
+  return (
+    <div data-column={col.id} className="flex min-h-0 min-w-0 flex-col gap-1">
+      <Pile waiting={col.waiting} spot={pileSpot} />
+      <Tile
+        {...(selectable && {
+          type: "button" as const,
+          "aria-pressed": selected,
+          onClick: () => onSelect?.(col.id),
+        })}
+        className={`relative flex flex-col items-center rounded-md bg-surface-2 px-0.5 pt-1 pb-2.5 sm:pt-2 sm:pb-4 ${isMarket ? "border border-dashed border-line" : "border border-line"} ${selectable ? "cursor-pointer hover:outline-2 hover:outline-offset-1 hover:outline-accent/50 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" : ""} ${selected ? "ring-2 ring-accent ring-offset-1 ring-offset-surface" : ""}`}
+      >
+        {isConstraint && (
+          <span {...constraintSpot} className="pointer-events-none absolute inset-0 flex flex-col items-center">
+            <span aria-hidden className="absolute -inset-px rounded-md border-2 border-constraint" />
+            <motion.span
+              aria-hidden
+              className="absolute -inset-1 rounded-[0.9rem] border-2 border-constraint"
+              initial={{ opacity: 0 }}
+              animate={pulse ? { opacity: [0.1, 0.55, 0.1] } : { opacity: 0.3 }}
+              transition={pulse ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : FADE}
+            />
+            <motion.span
+              layoutId="toc-constraint-tag"
+              className="absolute -top-3 z-10 rounded-full bg-constraint px-1.5 text-[9px] leading-3.5 font-medium text-surface sm:-top-2.5 sm:text-[10px] sm:leading-4"
+            >
+              constraint
+            </motion.span>
+          </span>
+        )}
+        <span {...(isMarket && ordersSpot)} className="text-[10px] leading-tight font-medium sm:text-xs">
+          {col.name}
+        </span>
+        <Dial value={col.capacity} spot={dialSpot} />
+        <span {...batchSpot} className="absolute inset-x-0 bottom-1 flex justify-center sm:bottom-1.5">
+          {col.flow > 0 && (
+            <motion.span
+              data-batch
+              layoutId={`toc-batch-${batchKey}`}
+              transition={{ layout: batch }}
+              className="block h-1 rounded-full bg-accent sm:h-1.5"
+              style={{ width: `${Math.min(1, col.flow / FLOW_SCALE) * 85}%` }}
+            />
+          )}
+        </span>
+      </Tile>
+      <Busy value={col.busy} showLabel={showBusy} />
+    </div>
+  );
+}
+
+function Pile({ waiting, spot }: { waiting: number; spot: SpotAttributes }) {
   const chips = Math.min(MAX_CHIPS, Math.ceil(waiting / LOAVES_PER_CHIP));
   return (
-    <div data-waiting={waiting} className="flex min-h-0 flex-1 flex-col items-center justify-end gap-0.5">
+    <div {...spot} data-waiting={waiting} className="flex min-h-0 flex-1 flex-col items-center justify-end gap-0.5">
       <span className={`text-[10px] leading-none font-semibold tabular-nums text-constraint sm:text-sm ${waiting ? "" : "invisible"}`}>
         {waiting}
       </span>
@@ -144,31 +185,36 @@ function Pile({ waiting }: { waiting: number }) {
   );
 }
 
-function Dial({ value }: { value: number }) {
+/** Capacity, or for the market the order rate, per hour. */
+function Dial({ value, spot }: { value: number; spot: SpotAttributes }) {
   return (
-    <span className="relative block h-5 w-7 sm:aspect-square sm:h-auto sm:w-14 lg:w-16">
-      <svg viewBox="0 0 40 40" className="hidden size-full sm:block" aria-hidden>
-        <path d={ARC} className="fill-none stroke-line" strokeWidth={4} strokeLinecap="round" />
-        <motion.path
-          d={ARC}
-          className="fill-none stroke-accent"
-          strokeWidth={4}
-          strokeLinecap="round"
-          initial={false}
-          animate={{ pathLength: Math.min(1, value / DIAL_MAX) }}
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums sm:text-sm">
-        {value}
+    <span {...spot} className="flex flex-col items-center">
+      <span className="relative block h-5 w-7 sm:aspect-square sm:h-auto sm:w-14 lg:w-16">
+        <svg viewBox="0 0 40 40" className="hidden size-full sm:block" aria-hidden>
+          <path d={ARC} className="fill-none stroke-line" strokeWidth={4} strokeLinecap="round" />
+          <motion.path
+            d={ARC}
+            className="fill-none stroke-accent"
+            strokeWidth={4}
+            strokeLinecap="round"
+            initial={false}
+            animate={{ pathLength: Math.min(1, value / DIAL_MAX) }}
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums sm:text-sm">
+          {value}
+        </span>
       </span>
+      <span className="text-[9px] leading-none text-muted sm:-mt-1 sm:text-[10px]">/h</span>
     </span>
   );
 }
 
 function Busy({ value, showLabel }: { value: number | null; showLabel: boolean }) {
+  const spot = useSpot("busy");
   if (value === null) return <div className="h-3 sm:h-4" />;
   return (
-    <div data-busy={Math.round(value * 100)} className="flex h-3 items-center gap-1 sm:h-4">
+    <div {...spot} data-busy={Math.round(value * 100)} className="flex h-3 items-center gap-1 sm:h-4">
       <div className="h-1 flex-1 overflow-hidden rounded-full bg-line sm:h-1.5">
         <motion.div
           className="h-full origin-left rounded-full bg-fg/60"

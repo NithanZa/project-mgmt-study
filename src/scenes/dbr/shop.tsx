@@ -2,6 +2,7 @@
 
 import { useAnimate, useReducedMotion } from "motion/react";
 import { useEffect, useId, type ReactNode } from "react";
+import { useSpot, useSpots } from "@/components/lesson/spotlight";
 import type { Station, TickState } from "@/lib/line-sim";
 import { BufferGauge } from "./buffer-gauge";
 import { Rope } from "./rope";
@@ -60,7 +61,7 @@ export function Shop({ geometry: g, stations, drum, state, tick, interval, arriv
       {stations.map((s, i) => (
         <g key={s.id} data-station={s.id} data-queue={state.queues[i]}>
           <Chevron x={colX(i)} y={g.tileY + g.tileH / 2} />
-          <Pile g={g} x={centre(i)} count={state.queues[i]} hatch={hatch} />
+          <Pile g={g} x={centre(i)} count={state.queues[i]} hatch={hatch} spots={pileSpots(i, drum)} />
           <Tile g={g} x={colX(i) + 4} width={g.colW - 8} station={s} isDrum={i === drum}>
             {i === drum && (
               <DrumParts
@@ -102,12 +103,13 @@ export function Shop({ geometry: g, stations, drum, state, tick, interval, arriv
 }
 
 function Gate({ g, arrivals, released }: { g: ShopGeometry; arrivals: number; released: number }) {
+  const spot = useSpot("gate");
   const cx = g.gateW / 2;
   const small = { fontSize: g.font * 0.85 };
   // Short tiles show only the count, with its label above the tile.
   const roomy = g.tileH >= 40;
   return (
-    <g data-gate data-release={released}>
+    <g {...spot} data-gate data-release={released}>
       {g.pileBottom - g.pileTop >= g.font * 3.5 && (
         <text x={cx} y={g.pileTop + g.font} textAnchor="middle" className="fill-muted" style={small}>
           <tspan>orders</tspan>
@@ -155,14 +157,28 @@ function Chevron({ x, y }: { x: number; y: number }) {
   );
 }
 
+/** Term ids a station's pile answers to: Weld's is the pile, and everything at or before Weld is the buffer. */
+const PILE_SPOTS = { drum: ["pile", "buffer"], upstream: ["buffer"], downstream: ["queue"] };
+const pileSpots = (i: number, drum: number) =>
+  i === drum ? PILE_SPOTS.drum : i < drum ? PILE_SPOTS.upstream : PILE_SPOTS.downstream;
+
+interface PileProps {
+  g: ShopGeometry;
+  x: number;
+  count: number;
+  hatch: string;
+  spots: string[];
+}
+
 /** One chip per item at the station; past twelve the pile is overloaded and hatched. */
-function Pile({ g, x, count, hatch }: { g: ShopGeometry; x: number; count: number; hatch: string }) {
+function Pile({ g, x, count, hatch, spots }: PileProps) {
+  const spot = useSpots(spots);
   const h = g.pileBottom - g.pileTop;
   const gap = h > 90 ? 2 : 1;
   const chipH = Math.max(1, (h - (SLOTS - 1) * gap) / SLOTS);
   const overload = count > SLOTS;
   return (
-    <g>
+    <g {...spot}>
       {count > 0 && (
         <text
           x={x}
@@ -201,32 +217,38 @@ interface TileProps {
 }
 
 function Tile({ g, x, width, station, isDrum, children }: TileProps) {
+  const spot = useSpot(isDrum ? "drum" : "station");
   const withPips = isDrum && g.tileH >= 40;
   return (
     <g>
-      <rect
-        x={x}
-        y={g.tileY}
-        width={width}
-        height={g.tileH}
-        rx={8}
-        className={`fill-surface-2 ${isDrum ? "stroke-constraint" : "stroke-line"}`}
-        strokeWidth={isDrum ? 2 : 1}
-      />
-      <text
-        x={x + width / 2}
-        y={g.tileY + g.tileH * (withPips ? 0.36 : 0.5)}
-        dy="0.35em"
-        textAnchor="middle"
-        style={{ fontSize: g.font }}
-      >
-        <tspan className="fill-fg font-semibold">{station.name}</tspan>
-        <tspan className="fill-muted tabular-nums"> {station.capacity}/day</tspan>
-      </text>
+      <g {...spot}>
+        <rect
+          x={x}
+          y={g.tileY}
+          width={width}
+          height={g.tileH}
+          rx={8}
+          className={`fill-surface-2 ${isDrum ? "stroke-constraint" : "stroke-line"}`}
+          strokeWidth={isDrum ? 2 : 1}
+        />
+        <text
+          x={x + width / 2}
+          y={g.tileY + g.tileH * (withPips ? 0.36 : 0.5)}
+          dy="0.35em"
+          textAnchor="middle"
+          style={{ fontSize: g.font }}
+        >
+          <tspan className="fill-fg font-semibold">{station.name}</tspan>
+          <tspan className="fill-muted tabular-nums"> {station.capacity}/day</tspan>
+        </text>
+      </g>
       {children}
     </g>
   );
 }
+
+/** A filled pip (and the ring's beat) is part of the drum and shows what Weld has used today. */
+const USED_SPOTS = ["drum", "consumed"];
 
 interface DrumPartsProps {
   g: ShopGeometry;
@@ -242,6 +264,8 @@ interface DrumPartsProps {
 function DrumParts({ g, x, width, cap, processed, tick, interval }: DrumPartsProps) {
   const [ring, animate] = useAnimate<SVGRectElement>();
   const reduce = useReducedMotion();
+  const drumSpot = useSpot("drum");
+  const usedSpot = useSpots(USED_SPOTS);
   useEffect(() => {
     if (!processed) return;
     const duration = Math.min(0.4, (interval * 0.9) / 1000);
@@ -255,35 +279,41 @@ function DrumParts({ g, x, width, cap, processed, tick, interval }: DrumPartsPro
   const tagW = g.font * 3.2;
   return (
     <g data-drum-processed={processed} data-drum-cap={cap}>
-      <rect
-        ref={ring}
-        x={x - 3}
-        y={g.tileY - 3}
-        width={width + 6}
-        height={g.tileH + 6}
-        rx={10}
-        className="fill-none stroke-constraint"
-        strokeWidth={2}
-        style={{ opacity: 0, transformBox: "fill-box", transformOrigin: "center" }}
-      />
-      <rect
-        x={cx - tagW / 2}
-        y={g.tileY - g.font * 0.65}
-        width={tagW}
-        height={g.font * 1.3}
-        rx={g.font * 0.65}
-        className="fill-constraint"
-      />
-      <text
-        x={cx}
-        y={g.tileY}
-        dy="0.35em"
-        textAnchor="middle"
-        className="fill-surface font-medium"
-        style={{ fontSize: g.font * 0.8 }}
-      >
-        drum
-      </text>
+      {/* The ring's opacity is animated inline, so the tag sits on its group. It beats with what
+          Weld used, so it answers to "consumed" too, which matters on short tiles without pips. */}
+      <g {...usedSpot}>
+        <rect
+          ref={ring}
+          x={x - 3}
+          y={g.tileY - 3}
+          width={width + 6}
+          height={g.tileH + 6}
+          rx={10}
+          className="fill-none stroke-constraint"
+          strokeWidth={2}
+          style={{ opacity: 0, transformBox: "fill-box", transformOrigin: "center" }}
+        />
+      </g>
+      <g {...drumSpot}>
+        <rect
+          x={cx - tagW / 2}
+          y={g.tileY - g.font * 0.65}
+          width={tagW}
+          height={g.font * 1.3}
+          rx={g.font * 0.65}
+          className="fill-constraint"
+        />
+        <text
+          x={cx}
+          y={g.tileY}
+          dy="0.35em"
+          textAnchor="middle"
+          className="fill-surface font-medium"
+          style={{ fontSize: g.font * 0.8 }}
+        >
+          drum
+        </text>
+      </g>
       {g.tileH >= 40 &&
         Array.from({ length: cap }, (_, k) => (
           <circle
@@ -291,6 +321,7 @@ function DrumParts({ g, x, width, cap, processed, tick, interval }: DrumPartsPro
             cx={cx + (k - (cap - 1) / 2) * step}
             cy={g.tileY + g.tileH * 0.7}
             r={g.font * 0.27}
+            {...(k < processed ? usedSpot : drumSpot)}
             className={k < processed ? "fill-constraint stroke-constraint" : "fill-surface stroke-constraint"}
             strokeWidth={1}
           />

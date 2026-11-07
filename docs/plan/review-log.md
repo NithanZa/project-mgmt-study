@@ -195,3 +195,55 @@ files instead of a commit.
 | shell (readouts) | all | CLS | A readout counting through wider or narrower numbers shifted its neighbours (vsm lead time, kanban WIP) | fixed: the final value reserves the width (`src/components/ui/readout.tsx`) |
 | all | — | bundle | First-load JS is 186–206 kB gzipped against a 180 kB budget: Next's client runtime 66 kB, React DOM 62 kB, Motion 48 kB, lesson code about 20 kB | not fixed: the framework baseline alone is about 131 kB; see the phase 16 report |
 | dsm | reorder | bundle | `Reorder`/`useDragControls` split a second dsm-only motion chunk | fixed: reorder rebuilt on `y` transforms with pointer and Alt+arrow handlers (`src/scenes/dsm/matrix.tsx`); one lesson chunk |
+
+## Teaching depth review
+
+Phase 7 of the teaching-depth plan. Every beat of every lesson was walked in
+Chromium at 1280 × 800 and checked against the interactivity bar. The bar asks
+for a hands-on element on every beat (a control, a scene hover or drag, a
+spotlight term, or a predict), a recap, one to three predicts, and terms that
+light a visible element. The Playwright suite now hovers every term, answers
+every predict, opens every why and exercises the recap jump. The cosmetic items
+were checked at 375 px as well. `motion-reviewer` could not reach the Motion+
+methodology (the MCP server is not signed in), so it audited by hand against
+the quality bar. Its findings are the "motion" rows.
+
+| Lesson | Beat | Check | Finding | Fix |
+| --- | --- | --- | --- | --- |
+| cpm | 1–5 | hands-on / predicts / recap | ok: every beat has terms or a predict, and beats 2, 3 and 5 also have controls. Network nodes hover on every beat. 3 predicts and a recap | – |
+| pert | 1–5 | hands-on / predicts / recap | ok: terms on every beat and controls on 4–5. 3 predicts. `tail` lights zero-height horizontal strokes, which Playwright's `:visible` treats as hidden | e2e accepts a lit element with any width or height instead of using `:visible` (`tests/e2e/lessons.spec.ts`) |
+| monte-carlo | 1 roll | term lights scene | "longest stream" lit nothing until the first Roll, because no stream is longest yet | Before a roll the term lights the Roll button (`src/scenes/monte-carlo/scene.tsx`). After a roll it lights the longest stream as before |
+| monte-carlo | 2–5 | hands-on / predicts / recap | ok: terms and controls on every beat, 3 predicts | – |
+| fast-tracking | 1–6 | hands-on / predicts / recap | ok: `risk` (beat 3) has the `unfinished` and `rework` terms and the draggable bar. Beats 5–6 have controls, and beat 5 has a predict. 2 predicts | – |
+| crashing | 1–6 | hands-on / predicts / recap | ok: `overhead` (beat 4) has a term, a predict and the overhead controls. 2 predicts | – |
+| dsm | 2 matrix | term lights scene | "row", "column" and "row E" named matrix parts while the scene still shows the graph (the learner switches the view), so `rows` and `columns` lit nothing | Graph nodes also answer to `rows` and `columns`, since each activity becomes a row and a column. `row-e` already lit node E (`src/scenes/dsm/graph.tsx`) |
+| dsm | 3 diagonal | hands-on | ok: the `diagonal`, `below` and `above` terms plus hoverable marks, not only a why | – |
+| dsm | 4–7 | hands-on / predicts / recap | ok: terms on every beat, drag on 6, controls on 5–7. 1 predict | – |
+| resource-leveling | 1–5 | hands-on / predicts / recap | ok: terms on beats 1–4, controls on 2–5. 3 predicts | – |
+| rcpsp | 3 rule | hands-on | ok: the `rule-dots` term, a predict and the rule controls | – |
+| rcpsp | 1–5 | hands-on / predicts / recap | ok: terms and controls throughout, 3 predicts | – |
+| critical-chain | 5 feeding | hands-on | ok: the `feeding-buffer` and `project-buffer` terms and a predict | – |
+| critical-chain | 1–6 | hands-on / predicts / recap | ok: terms on beats 1–5, controls on 4–6. 3 predicts | – |
+| toc | 4 subordinate | hands-on | ok: the `release`, `cycle-time` and `wip` terms, a predict and the release control | – |
+| toc | 3, 6 | hands-on | ok: no terms, but each beat has controls (the exploit toggle, the repeat panel) and selectable stations | – |
+| toc | 1–6 | predicts / recap | ok: 2 predicts and a recap | – |
+| dbr | 1–5 | hands-on / predicts / recap | ok: terms on every beat, controls on 2–5. 1 predict | – |
+| kanban | 3 cfd | hands-on | ok: the `band`, `arrivals` and `done` terms and the WIP limit slider | – |
+| kanban | 1–6 | hands-on / predicts / recap | ok: terms on every beat, playback buttons in the scene throughout and the WIP slider on 2–6. 2 predicts | – |
+| vsm | 1–5 | hands-on / predicts / recap | ok: terms on every beat, hoverable map boxes, improvement chips on 4–5. 1 predict | – |
+| shell (scene frame) | all | spotlight | The controls strip had no `data-spotlight`, so tagged controls (toc's Oven invest button, vsm's improvement chips, dbr's sliders) neither dimmed nor pulsed | fixed: `data-spotlight` on the controls strip (`src/components/lesson/scene-frame.tsx`). dbr's local `data-spotlight` wrapper was removed (`src/scenes/dbr/scene.tsx`). The toc and vsm outlines stay as an extra cue, with updated comments. In Chromium, dbr's Buffer target dims to 0.3 while Variability is lit |
+| dsm | 6 play | drag | Dragging a row down stopped after one swap. React moved the dragged row's DOM node past its neighbour, which released pointer capture | fixed: move and up are handled by `window` listeners for the length of the drag. Capture stays only to keep other headers from lighting (`src/scenes/dsm/matrix.tsx`). In Chromium, C now moves down 3 rows, T up 4 and M down 2 |
+| kanban | 4 little (375 px) | cosmetic | The CFD plot is about 55–90 px tall on a phone, and the "arrived", "WIP" and "done" end labels crowd each other | partly fixed: "done" and "cycle time" now keep a line's clearance below the WIP label (`src/scenes/kanban/cfd.tsx`). "arrived" is still held at the top of the plot. A taller plot needs a scene layout change, which is out of scope |
+| monte-carlo | 5 convergence | cosmetic | The "P80 (d)" axis label was clipped at the left edge at 11 px (desktop) | fixed: start-anchored at x = 0 (`src/scenes/monte-carlo/convergence-band.tsx`) |
+| dbr | 4 (buffer 12) | cosmetic | The current marker's "94%" label touched the knee ring when the buffer sits on the knee | fixed: label moved 4 px left, clear of the ring (`src/scenes/dbr/sweep-chart.tsx`) |
+| pert | 3 (375 px) | cosmetic | The "σ 1.9" label overlaps the bell's stroke | fixed: surface-coloured halo (`paint-order: stroke`) on the label, as in dbr's sweep chart (`src/scenes/pert/project-curve.tsx`) |
+| toc | — | e2e | `tests/e2e/phase11.mjs` (the `Proof N per hour` matcher) | not present on disk or in git, so nothing to do |
+| all | — | e2e | Lessons loaded through `import()` in the Playwright spec failed to resolve their own `@/` imports under Node 22.17 | fixed: the spec imports the 13 lesson modules statically (`tests/e2e/lessons.spec.ts`). Playwright 1.64 also needed Chromium build 1248 (`playwright install chromium`) |
+| fast-tracking | 2 | motion | The drag-hint pulse ran 3 × 600 ms with 0.9 s gaps (3.6 s) and still ran under reduced motion | fixed: one 600 ms pulse, skipped under reduced motion (`src/scenes/fast-tracking/gantt.tsx`) |
+| cpm | 2–5 | motion | Edges tweened `stroke-width` (a paint property) in `animate` | fixed: stroke width is a plain attribute and snaps; only `d` and opacity animate (`src/scenes/critical-path/network.tsx`) |
+| cpm | all | motion | Node buttons transitioned `box-shadow` (the critical ring) | fixed: the transition covers background and border colour only, and the ring snaps (`src/scenes/critical-path/network.tsx`) |
+| shell (readouts) | all | motion / reduced motion | The readout count-up used imperative `animate()`, which ignores `MotionConfig reducedMotion` | fixed: under reduced motion it jumps to the value (`src/components/ui/readout.tsx`) |
+| toc | 1–6 | motion | The constraint ring pulses for 1.6 s and repeats | not fixed: it pulses only while the line plays, so it is playback (the bar's exception). It stops on pause, and `useReducedMotion` already turns it off |
+| dsm | reorder | motion | Each row's `y` is a percentage string built by `useTransform` on every frame while the row moves | not fixed: the percentage keeps rows placed across container resizes without measuring. It is one short string per moving row during a 0.4 s spring or a drag. A px mapping would need resize tracking |
+| all | — | motion | Path `d` morphs, Motion `layout`, `pathLength` and 150 ms `transition-colors` | ok: allowed by the quality bar. The spotlight CSS is opacity only, runs a single 600 ms pulse and is off under reduced motion |
+| all | — | bundle | First-load JS per lesson route is 204.6–208.0 kB gzipped against a 180 kB budget, excluding the `nomodule` polyfills (38.7 kB) that modern browsers skip. Next runtime 65.7 kB, React DOM 62.6 kB, Motion 47.8 kB, three lesson chunks 21–22 kB | not fixed: the same baseline as the phase 16 row. The framework and Motion alone are about 176 kB, and the teaching primitives add little on top |

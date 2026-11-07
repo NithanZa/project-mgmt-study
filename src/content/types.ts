@@ -34,10 +34,30 @@ export interface LessonMeta {
   chapter: ChapterId;
 }
 
+export interface Predict {
+  prompt: string;
+  /** Two or three options. */
+  options: string[];
+  answer: number;
+  /** One clause explaining the answer. */
+  why: string;
+}
+
+export interface RecapStep {
+  /** At most twelve words. */
+  step: string;
+  /** A Beat id in this lesson. */
+  beat: string;
+}
+
 export interface Beat {
   id: string;
   title: string;
   body: ReactNode;
+  /** The mechanism behind the body, revealed on demand. At most forty words. */
+  why?: ReactNode;
+  /** A guess the learner makes before acting or seeing the result. */
+  predict?: Predict;
 }
 
 export interface Check {
@@ -57,4 +77,6 @@ export interface Lesson {
   Scene: ComponentType<SceneProps>;
   Thumbnail: ComponentType;
   check: Check;
+  /** "Do it yourself" steps shown on the last beat. */
+  recap: RecapStep[];
 }

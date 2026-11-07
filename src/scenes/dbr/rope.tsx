@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useSpot } from "@/components/lesson/spotlight";
 
 const FADE = { duration: 0.18, ease: "easeOut" } as const;
 
@@ -18,9 +19,11 @@ export interface RopeProps {
 export function Rope({ drumX, gateX, from, laneY, font, on }: RopeProps) {
   const r = Math.max(0, Math.min(6, laneY - from));
   const d = `M ${drumX} ${from} V ${laneY - r} Q ${drumX} ${laneY} ${drumX - r} ${laneY} H ${gateX + r} Q ${gateX} ${laneY} ${gateX} ${laneY - r} V ${from}`;
+  const spot = useSpot("rope");
   const labelX = (drumX + gateX) / 2;
+  // The path and label fade inline, which would beat the spotlight, so their group carries the tag.
   return (
-    <g aria-hidden data-rope={on ? "on" : "off"}>
+    <g {...spot} aria-hidden data-rope={on ? "on" : "off"}>
       <motion.path
         d={d}
         className="fill-none stroke-accent"

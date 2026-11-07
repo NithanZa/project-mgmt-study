@@ -26,7 +26,7 @@ interface Setup {
   selected: string;
 }
 
-const BEAT = { identify: 1, exploit: 2, elevate: 3, repeat: 4 } as const;
+const BEAT = { identify: 1, exploit: 2, subordinate: 3, elevate: 4, repeat: 5 } as const;
 const OVEN_BASE = BAKERY.find((s) => s.id === OVEN)?.capacity ?? 0;
 const MULTIPLIERS = [1, 1.5, 2].map((m) => ({ value: m, label: `×${m}` }));
 const ovenAt = (m: number) => Math.floor(OVEN_BASE * m);
@@ -78,9 +78,9 @@ export function TocScene({ beat }: SceneProps) {
       label={label}
       readouts={
         <>
-          <Readout label="Throughput / h" value={result.throughput} format={one} />
-          <Readout label="Cycle time h" value={result.avgCycleTime} format={one} />
-          <Readout label="WIP" value={result.avgWip} format={whole} />
+          <Readout label="Throughput / h" value={result.throughput} format={one} spot="throughput" />
+          <Readout label="Cycle time h" value={result.avgCycleTime} format={one} spot="cycle-time" />
+          <Readout label="WIP" value={result.avgWip} format={whole} spot="wip" />
         </>
       }
       controls={controlsFor(beat, setup, update)}
@@ -109,18 +109,15 @@ export function TocScene({ beat }: SceneProps) {
 function controlsFor(beat: number, setup: Setup, update: (patch: Partial<Setup>) => void) {
   if (beat === BEAT.exploit)
     return (
-      <>
-        <Toggle
-          label={`Cleaning loss ${CLEANING_LOSS * 100}%`}
-          checked={setup.cleaningLoss}
-          onChange={(cleaningLoss) => update({ cleaningLoss })}
-        />
-        <Toggle
-          label="Oven-paced release"
-          checked={setup.subordinate}
-          onChange={(on) => update({ subordinate: on })}
-        />
-      </>
+      <Toggle
+        label={`Cleaning loss ${CLEANING_LOSS * 100}%`}
+        checked={setup.cleaningLoss}
+        onChange={(cleaningLoss) => update({ cleaningLoss })}
+      />
+    );
+  if (beat === BEAT.subordinate)
+    return (
+      <Toggle label="Oven-paced release" checked={setup.subordinate} onChange={(on) => update({ subordinate: on })} />
     );
   if (beat === BEAT.elevate)
     return (

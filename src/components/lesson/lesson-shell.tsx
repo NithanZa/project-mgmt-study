@@ -12,8 +12,12 @@ import { Kbd } from "@/components/ui/kbd";
 import { ShortcutsDialog } from "@/components/site/shortcuts-dialog";
 import { FADE, SPRING_AND_FADE } from "@/components/transitions";
 import { CheckCard } from "./check-card";
+import { MethodRecap } from "./method-recap";
+import { PredictCard } from "./predict-card";
 import { ProgressRail } from "./progress-rail";
 import { SceneAnnouncer } from "./scene-announcer";
+import { SpotlightProvider, useSetSpotlight } from "./spotlight";
+import { WhyDisclosure } from "./why-disclosure";
 
 function isEditable(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -25,7 +29,16 @@ function isEditable(target: EventTarget | null): boolean {
 }
 
 export function LessonShell({ lesson }: { lesson: Lesson }) {
-  const { meta, beats, Scene, check } = lesson;
+  // Above both the scene and the copy, so a term in the copy can light the scene.
+  return (
+    <SpotlightProvider>
+      <LessonShellInner lesson={lesson} />
+    </SpotlightProvider>
+  );
+}
+
+function LessonShellInner({ lesson }: { lesson: Lesson }) {
+  const { meta, beats, Scene, check, recap } = lesson;
   const router = useRouter();
   const progress = useProgress()[meta.slug];
   const last = beats.length - 1;
@@ -37,10 +50,16 @@ export function LessonShell({ lesson }: { lesson: Lesson }) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const shortcutsTrigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
+  const setSpotlight = useSetSpotlight();
 
   useEffect(() => {
     visit(meta.slug);
   }, [meta.slug]);
+
+  // A term from the previous beat must not keep the new beat's scene dimmed.
+  useEffect(() => {
+    setSpotlight(null);
+  }, [index, setSpotlight]);
 
   // A layout effect so keys work as soon as the lesson commits: passive effects
   // wait for the route's view transition to finish.
@@ -124,6 +143,8 @@ export function LessonShell({ lesson }: { lesson: Lesson }) {
                   </p>
                   <h2 className="mb-2 text-xl font-semibold">{beat.title}</h2>
                   <div className="text-[0.95rem] leading-relaxed text-fg">{beat.body}</div>
+                  {beat.why && <WhyDisclosure key={`why-${beat.id}`}>{beat.why}</WhyDisclosure>}
+                  {beat.predict && <PredictCard key={`predict-${beat.id}`} predict={beat.predict} />}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -166,6 +187,7 @@ export function LessonShell({ lesson }: { lesson: Lesson }) {
 
             {index === last && (
               <div className="flex flex-col gap-4">
+                <MethodRecap steps={recap} beats={beats} onJump={(i) => setBeat(meta.slug, i)} />
                 <CheckCard
                   key={meta.slug}
                   check={check}

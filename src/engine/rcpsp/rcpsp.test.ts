@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cpm } from "./cpm";
 import { CAPACITIES, GAME_JAM } from "./fixture";
 import { exhaustive, sampleOrders } from "./search";
-import { makespan, orderPriority, ruleComparator, serialSgs, usage } from "./sgs";
+import { makespan, orderPriority, ruleComparator, ruleKey, serialSgs, serialSgsTrace, usage } from "./sgs";
 import { RESOURCES, RULES, type Capacities, type Schedule } from "./types";
 
 function withinCapacity(schedule: Schedule, capacities: Capacities) {
@@ -22,6 +22,31 @@ describe("rcpsp engine", () => {
       makespan(serialSgs(GAME_JAM, CAPACITIES, ruleComparator(rule, GAME_JAM))),
     );
     expect(spans).toEqual([22, 22, 24, 24, 28, 28]);
+  });
+
+  it("traces the latest-start rule one placement at a time", () => {
+    const trace = serialSgsTrace(GAME_JAM, CAPACITIES, "min-lst");
+    expect(trace.order).toEqual([..."CDBFGAE"]);
+    expect(trace.placed).toHaveLength(GAME_JAM.length + 1);
+    trace.placed.forEach((partial, k) => expect(partial.map((p) => p.id).sort()).toEqual(trace.order.slice(0, k).sort()));
+    expect(trace.placed[3]).toEqual([
+      { id: "B", start: 7, finish: 10 },
+      { id: "C", start: 0, finish: 2 },
+      { id: "D", start: 2, finish: 7 },
+    ]);
+    expect(trace.placed[GAME_JAM.length]).toEqual(
+      serialSgs(GAME_JAM, CAPACITIES, ruleComparator("min-lst", GAME_JAM)),
+    );
+    for (const rule of RULES) {
+      const { placed } = serialSgsTrace(GAME_JAM, CAPACITIES, rule);
+      expect(placed[GAME_JAM.length]).toEqual(serialSgs(GAME_JAM, CAPACITIES, ruleComparator(rule, GAME_JAM)));
+    }
+  });
+
+  it("exposes each rule's ranking key", () => {
+    const lst = ruleKey("min-lst", GAME_JAM);
+    expect(GAME_JAM.map(lst)).toEqual([8, 4, 0, 2, 9, 7, 7]);
+    expect(GAME_JAM.map(ruleKey("greatest-demand", GAME_JAM))).toEqual([-5, -6, -2, -10, -8, -12, -6]);
   });
 
   it("exhaustive search finds 20 as best and 28 as worst over 5040 orders", () => {

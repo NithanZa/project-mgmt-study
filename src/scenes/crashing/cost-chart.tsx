@@ -2,7 +2,10 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { useSpot, useSpots } from "@/components/lesson/spotlight";
+import { SPRING_AND_FADE } from "@/components/transitions";
 import type { TotalPoint } from "@/engine/crashing/crash";
+import { money } from "@/lib/format";
 
 const LEFT = 44;
 const RIGHT = 56;
@@ -20,6 +23,9 @@ export interface CostChartProps {
   /** Cheapest-first crash curve with overhead and total costs. */
   totals: TotalPoint[];
   best: { days: number; total: number };
+  /** Overhead per day, for the overhead line's label. */
+  overhead: number;
+  showOverhead: boolean;
   showTotal: boolean;
 }
 
@@ -54,7 +60,7 @@ function useViewBox(ref: RefObject<SVGSVGElement | null>) {
   return box;
 }
 
-export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
+export function CostChart({ points, totals, best, overhead, showOverhead, showTotal }: CostChartProps) {
   const ref = useRef<SVGSVGElement>(null);
   const { w: W, h: H, resized } = useViewBox(ref);
   // Jump on resize. Reduced motion already stops transforms, but path data and
@@ -62,12 +68,18 @@ export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
   const reduce = useReducedMotion();
   const morph = reduce || resized ? INSTANT : undefined;
   const move = resized ? INSTANT : undefined;
+  const directSpot = useSpot("direct");
+  const pointSpot = useSpots(["direct", "point"]);
+  const overheadSpot = useSpot("overhead");
+  const totalSpot = useSpot("total");
+  const minSpot = useSpot("min");
   const grid = H < 160 ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1];
   const lo = totals[totals.length - 1].days;
   const hi = totals[0].days;
+  // The axis makes room for the total as soon as overhead shows, so the total line arrives without a rescale.
   const top = Math.max(
     ...points.map((p) => p.direct),
-    ...totals.map((p) => (showTotal ? p.total : p.direct)),
+    ...totals.map((p) => (showOverhead ? p.total : p.direct)),
   );
   const yMax = Y_MAX.find((m) => m >= top) ?? Y_MAX[Y_MAX.length - 1];
   const sx = (days: number) => LEFT + ((days - lo) / (hi - lo)) * (W - LEFT - RIGHT);
@@ -94,8 +106,10 @@ export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
         days
       </text>
 
-      <motion.g initial={false} animate={{ opacity: showTotal ? 1 : 0 }} transition={FADE} data-total={showTotal}>
+      {/* Both groups fade inline, which would beat the spotlight, so their children carry the tags. */}
+      <motion.g initial={false} animate={{ opacity: showOverhead ? 1 : 0 }} transition={FADE} data-overhead={showOverhead}>
         <motion.path
+          {...overheadSpot}
           initial={false}
           animate={{ d: line(totals.map((p) => [sx(p.days), sy(p.overhead)])) }}
           transition={morph}
@@ -104,14 +118,19 @@ export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
           strokeDasharray="5 4"
         />
         <motion.text
+          {...overheadSpot}
           initial={false}
           animate={{ x: sx(lo) + 4, y: sy(totals[totals.length - 1].overhead) + 14 }}
           transition={move}
-          className="fill-float text-[10px]"
+          className="fill-float text-[10px] tabular-nums"
         >
-          overhead
+          −{money(overhead)}/d
         </motion.text>
+      </motion.g>
+
+      <motion.g initial={false} animate={{ opacity: showTotal ? 1 : 0 }} transition={FADE} data-total={showTotal}>
         <motion.path
+          {...totalSpot}
           initial={false}
           animate={{ d: line(totals.map((p) => [sx(p.days), sy(p.total)])) }}
           transition={morph}
@@ -120,6 +139,7 @@ export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
           strokeLinejoin="round"
         />
         <motion.text
+          {...totalSpot}
           initial={false}
           animate={{ x: sx(hi) + 8, y: sy(totals[0].total) + 3.5 }}
           transition={move}
@@ -128,6 +148,7 @@ export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
           total
         </motion.text>
         <motion.path
+          {...minSpot}
           initial={false}
           animate={{ d: `M ${sx(best.days)} ${sy(best.total) + 8} L ${sx(best.days)} ${H - BOTTOM}` }}
           transition={morph}
@@ -135,6 +156,7 @@ export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
           strokeDasharray="2 3"
         />
         <motion.g
+          {...minSpot}
           initial={false}
           animate={{ x: sx(best.days), y: sy(best.total) }}
           transition={move}
@@ -147,38 +169,69 @@ export function CostChart({ points, totals, best, showTotal }: CostChartProps) {
         </motion.g>
       </motion.g>
 
+      {/* Segments and step prices fade in and out inline, so their group carries the tag. */}
+      <g {...directSpot}>
+        <AnimatePresence initial={false}>
+          {xy.slice(1).map((to, i) => {
+            const d = line([xy[i], to]);
+            return (
+              <motion.path
+                key={`seg-${i}`}
+                initial={{ pathLength: 0, d }}
+                animate={{ pathLength: 1, d }}
+                transition={morph}
+                exit={{ opacity: 0, transition: FADE }}
+                className="fill-none stroke-buffer"
+                strokeWidth={2}
+              />
+            );
+          })}
+          {xy.slice(1).map((to, i) => {
+            const price = points[i + 1].direct - points[i].direct;
+            // Above the segment's middle; a step that saves no day is vertical, so its price sits to its
+            // left, clear of the previous step's label.
+            const vertical = to[0] === xy[i][0];
+            const x = (xy[i][0] + to[0]) / 2 - (vertical ? 7 : 0);
+            const y = (xy[i][1] + to[1]) / 2 + (vertical ? 3 : -7);
+            return (
+              <motion.text
+                key={`price-${i}`}
+                data-step-price={price}
+                textAnchor={vertical ? "end" : "middle"}
+                className="fill-buffer text-[9px] tabular-nums"
+                initial={{ x, y, opacity: 0 }}
+                animate={{ x, y, opacity: 1 }}
+                transition={resized ? INSTANT : SPRING_AND_FADE}
+                exit={{ opacity: 0, transition: FADE }}
+              >
+                +{money(price)}
+              </motion.text>
+            );
+          })}
+        </AnimatePresence>
+        <text x={sx(hi) + 8} y={sy(0) - 6} className="fill-buffer text-[10px] font-semibold">
+          direct
+        </text>
+      </g>
       <AnimatePresence initial={false}>
-        {xy.slice(1).map((to, i) => {
-          const d = line([xy[i], to]);
+        {xy.map(([x, y], i) => {
+          const last = i === xy.length - 1;
           return (
-            <motion.path
-              key={`seg-${i}`}
-              initial={{ pathLength: 0, d }}
-              animate={{ pathLength: 1, d }}
-              transition={morph}
+            <motion.circle
+              key={`pt-${i}`}
+              {...(last ? pointSpot : directSpot)}
+              r={last ? 5 : 3.5}
+              className={last ? "fill-surface stroke-buffer" : "fill-buffer"}
+              strokeWidth={2.5}
+              data-point={i}
+              initial={{ x, y, scale: 0 }}
+              animate={{ x, y, scale: 1 }}
+              transition={move}
               exit={{ opacity: 0, transition: FADE }}
-              className="fill-none stroke-buffer"
-              strokeWidth={2}
             />
           );
         })}
-        {xy.map(([x, y], i) => (
-          <motion.circle
-            key={`pt-${i}`}
-            r={i === xy.length - 1 ? 5 : 3.5}
-            className={i === xy.length - 1 ? "fill-surface stroke-buffer" : "fill-buffer"}
-            strokeWidth={2.5}
-            data-point={i}
-            initial={{ x, y, scale: 0 }}
-            animate={{ x, y, scale: 1 }}
-            transition={move}
-            exit={{ opacity: 0, transition: FADE }}
-          />
-        ))}
       </AnimatePresence>
-      <text x={sx(hi) + 8} y={sy(0) - 6} className="fill-buffer text-[10px] font-semibold">
-        direct
-      </text>
     </svg>
   );
 }

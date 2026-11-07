@@ -2,6 +2,7 @@
 
 import { motion, type Transition } from "motion/react";
 import { useId } from "react";
+import { useSpot, useSpots } from "@/components/lesson/spotlight";
 import type { CrashTask } from "@/engine/crashing/types";
 import { money } from "@/lib/format";
 
@@ -30,9 +31,11 @@ export interface NetworkProps {
   recent: string[];
   /** Changes whenever the recent tasks should flash; null for no flash. */
   flash: number | null;
+  /** Extra spotlight ids for individual task nodes. */
+  spotTasks?: { id: string; spot: string }[];
 }
 
-export function Network({ tasks, base, paths, recent, flash }: NetworkProps) {
+export function Network({ tasks, base, paths, recent, flash, spotTasks = [] }: NetworkProps) {
   const id = useId();
   const critical = new Set(paths.flat());
   const criticalEdges = new Set(paths.flatMap((p) => p.slice(1).map((to, i) => `${p[i]}>${to}`)));
@@ -61,93 +64,148 @@ export function Network({ tasks, base, paths, recent, flash }: NetworkProps) {
       {tasks.flatMap((t) =>
         t.deps.map((dep) => {
           const key = `${dep}>${t.id}`;
-          const d = edgePath(byId.get(dep)!, t);
           return (
-            <g key={key}>
-              <path d={d} className="fill-none stroke-muted" strokeWidth={1.25} markerEnd={`url(#${id}-muted)`} />
-              <motion.path
-                d={d}
-                className="fill-none stroke-accent"
-                strokeWidth={3}
-                markerEnd={`url(#${id}-accent)`}
-                initial={false}
-                animate={{ opacity: criticalEdges.has(key) ? 1 : 0 }}
-                transition={FADE}
-              />
-            </g>
+            <Edge
+              key={key}
+              d={edgePath(byId.get(dep)!, t)}
+              critical={criticalEdges.has(key)}
+              marker={(tone) => `url(#${id}-${tone})`}
+            />
           );
         }),
       )}
 
-      {tasks.map((t, i) => {
-        const x = cx(t) - NODE_W / 2;
-        const y = cy(t) - NODE_H / 2;
-        const saved = base[i].days - t.days;
-        const isCritical = critical.has(t.id);
-        const isRecent = recent.includes(t.id);
-        return (
-          <g
-            key={t.id}
-            data-task={t.id}
-            data-critical={isCritical}
-            data-recent={isRecent}
-            data-locked={t.days === t.minDays}
-          >
-            {isRecent && flash !== null && (
-              <motion.rect
-                key={flash}
-                x={x - 5}
-                y={y - 5}
-                width={NODE_W + 10}
-                height={NODE_H + 10}
-                rx={12}
-                className="fill-accent-soft stroke-accent"
-                strokeWidth={2}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 0] }}
-                transition={FLASH}
-              />
-            )}
-            <rect x={x} y={y} width={NODE_W} height={NODE_H} rx={8} className="fill-surface-2 stroke-line" strokeWidth={1.5} />
-            <motion.rect
-              x={x}
-              y={y}
-              width={NODE_W}
-              height={NODE_H}
-              rx={8}
-              className="fill-accent-soft stroke-accent"
-              strokeWidth={3}
-              initial={false}
-              animate={{ opacity: isCritical ? 1 : 0 }}
-              transition={FADE}
-            />
-            <text x={cx(t)} y={cy(t) - 6} textAnchor="middle" className="fill-muted text-[10px]">
-              {t.name}
-            </text>
-            <text x={cx(t)} y={cy(t) + 13} textAnchor="middle" className="fill-fg text-[15px] font-semibold tabular-nums">
-              {t.days}d
-              {saved > 0 && (
-                <tspan dx={3} className="fill-muted text-[9px] font-normal">
-                  −{saved}
-                </tspan>
-              )}
-            </text>
-            <g transform={`translate(${x + NODE_W - 11} ${y + 7})`}>
-              <motion.g
-                initial={false}
-                animate={{ opacity: t.days === t.minDays ? 1 : 0 }}
-                transition={FADE}
-              >
-                <path d="M -2.5 3 V 1 A 2.5 2.5 0 0 1 2.5 1 V 3" className="fill-none stroke-muted" strokeWidth={1.3} />
-                <rect x={-4} y={3} width={8} height={6} rx={1.2} className="fill-muted" />
-              </motion.g>
-            </g>
-            <text x={cx(t)} y={y + NODE_H + 13} textAnchor="middle" className="fill-muted text-[9.5px] tabular-nums">
-              {t.costPerDay > 0 ? `${money(t.costPerDay)}/d · min ${t.minDays}` : "fixed"}
-            </text>
-          </g>
-        );
-      })}
+      {tasks.map((t, i) => (
+        <Node
+          key={t.id}
+          task={t}
+          saved={base[i].days - t.days}
+          critical={critical.has(t.id)}
+          recent={recent.includes(t.id)}
+          flash={flash}
+          spots={spotTasks.filter((s) => s.id === t.id).map((s) => s.spot)}
+        />
+      ))}
     </svg>
+  );
+}
+
+interface EdgeProps {
+  d: string;
+  critical: boolean;
+  marker: (tone: "muted" | "accent") => string;
+}
+
+/** One dependency arrow. The spotlight sits on the group so the overlay keeps its own fade. */
+function Edge({ d, critical, marker }: EdgeProps) {
+  const spot = useSpot(critical ? "critical" : "arrow");
+  return (
+    <g {...spot}>
+      <path d={d} className="fill-none stroke-muted" strokeWidth={1.25} markerEnd={marker("muted")} />
+      <motion.path
+        d={d}
+        className="fill-none stroke-accent"
+        strokeWidth={3}
+        markerEnd={marker("accent")}
+        initial={false}
+        animate={{ opacity: critical ? 1 : 0 }}
+        transition={FADE}
+      />
+    </g>
+  );
+}
+
+interface NodeProps {
+  task: CrashTask;
+  /** Days taken off so far. */
+  saved: number;
+  critical: boolean;
+  recent: boolean;
+  flash: number | null;
+  /** Extra spotlight ids for this node's box. */
+  spots: string[];
+}
+
+/**
+ * A task box with its days and price badge. The box, the days, the badge's two
+ * halves and the lock are separate spotlight targets, so none is nested in another.
+ */
+function Node({ task: t, saved, critical, recent, flash, spots }: NodeProps) {
+  const boxSpot = useSpots([critical ? "critical" : "task", ...spots]);
+  const crashSpot = useSpot("crash");
+  const slopeSpot = useSpot("slope");
+  const limitSpot = useSpot("limit");
+  const x = cx(t) - NODE_W / 2;
+  const y = cy(t) - NODE_H / 2;
+  const locked = t.days === t.minDays;
+
+  return (
+    <g data-task={t.id} data-critical={critical} data-recent={recent} data-locked={locked}>
+      <g {...boxSpot}>
+        {recent && flash !== null && (
+          <motion.rect
+            key={flash}
+            x={x - 5}
+            y={y - 5}
+            width={NODE_W + 10}
+            height={NODE_H + 10}
+            rx={12}
+            className="fill-accent-soft stroke-accent"
+            strokeWidth={2}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            transition={FLASH}
+          />
+        )}
+        <rect x={x} y={y} width={NODE_W} height={NODE_H} rx={8} className="fill-surface-2 stroke-line" strokeWidth={1.5} />
+        <motion.rect
+          x={x}
+          y={y}
+          width={NODE_W}
+          height={NODE_H}
+          rx={8}
+          className="fill-accent-soft stroke-accent"
+          strokeWidth={3}
+          initial={false}
+          animate={{ opacity: critical ? 1 : 0 }}
+          transition={FADE}
+        />
+        <text x={cx(t)} y={cy(t) - 6} textAnchor="middle" className="fill-muted text-[10px]">
+          {t.name}
+        </text>
+      </g>
+      <text
+        {...crashSpot}
+        x={cx(t)}
+        y={cy(t) + 13}
+        textAnchor="middle"
+        className="fill-fg text-[15px] font-semibold tabular-nums"
+      >
+        {t.days}d
+        {saved > 0 && (
+          <tspan dx={3} className="fill-muted text-[9px] font-normal">
+            −{saved}
+          </tspan>
+        )}
+      </text>
+      {/* Tagged outside the lock's own fade, which is inline and would beat the spotlight. */}
+      <g {...limitSpot} transform={`translate(${x + NODE_W - 11} ${y + 7})`}>
+        <motion.g initial={false} animate={{ opacity: locked ? 1 : 0 }} transition={FADE}>
+          <path d="M -2.5 3 V 1 A 2.5 2.5 0 0 1 2.5 1 V 3" className="fill-none stroke-muted" strokeWidth={1.3} />
+          <rect x={-4} y={3} width={8} height={6} rx={1.2} className="fill-muted" />
+        </motion.g>
+      </g>
+      <text x={cx(t)} y={y + NODE_H + 13} textAnchor="middle" className="fill-muted text-[9.5px] tabular-nums">
+        {t.costPerDay > 0 ? (
+          <>
+            <tspan {...slopeSpot}>{money(t.costPerDay)}/d</tspan>
+            {" · "}
+            <tspan {...limitSpot}>min {t.minDays}</tspan>
+          </>
+        ) : (
+          <tspan {...limitSpot}>fixed</tspan>
+        )}
+      </text>
+    </g>
   );
 }
