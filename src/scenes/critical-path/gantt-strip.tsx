@@ -35,7 +35,12 @@ export function GanttStrip({ result, width, height }: GanttStripProps) {
         return (
           <g key={id}>
             {!small && (
-              <text x={0} y={y + rowH / 2} dominantBaseline="central" className="fill-muted text-[10px]">
+              <text
+                x={0}
+                y={y + rowH / 2}
+                dominantBaseline="central"
+                className={`text-[10px] transition-colors ${row.critical ? "fill-fg" : "fill-muted"}`}
+              >
                 {id}
               </text>
             )}

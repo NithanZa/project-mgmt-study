@@ -39,7 +39,7 @@ export function BufferGauge({ x, top, bottom, width, count, target, max, starved
         <text
           transform={`translate(${x - font * 2.3} ${bottom}) rotate(-90)`}
           dy="0.35em"
-          className="fill-muted"
+          className={`transition-colors ${starved ? "fill-fg" : "fill-muted"}`}
           style={{ fontSize: font * 0.8 }}
         >
           buffer

@@ -29,7 +29,7 @@ export function FocusingSteps({ beat }: { beat: number }) {
           <li
             key={step}
             aria-current={active(i) ? "step" : undefined}
-            className={`py-1 text-center text-[10px] whitespace-nowrap sm:text-xs ${active(i) ? "font-semibold text-fg" : "text-muted"}`}
+            className={`py-1 text-center text-[10px] whitespace-nowrap transition-colors sm:text-xs ${active(i) ? "font-semibold text-fg" : "text-muted"}`}
           >
             {active(i) ? (
               step

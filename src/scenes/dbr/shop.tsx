@@ -221,7 +221,7 @@ function Tile({ g, x, width, station, isDrum, children }: TileProps) {
         style={{ fontSize: g.font }}
       >
         <tspan className="fill-fg font-semibold">{station.name}</tspan>
-        <tspan className="fill-muted tabular-nums"> {station.capacity}/day</tspan>
+        <tspan className={`tabular-nums ${isDrum ? "fill-fg" : "fill-muted"}`}> {station.capacity}/day</tspan>
       </text>
       {children}
     </g>

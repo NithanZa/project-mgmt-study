@@ -29,7 +29,7 @@ export function InvestPanel({ stations, deltas, invested, tried, onInvest }: Inv
               {shown && (
                 <motion.span
                   data-delta={s.id}
-                  className={`rounded-full px-1.5 text-xs leading-4 font-semibold sm:leading-5 tabular-nums ${delta > 0 ? "bg-ok/15 text-ok" : "bg-surface-2 text-muted"}`}
+                  className={`rounded-full px-1.5 text-xs leading-4 font-semibold sm:leading-5 tabular-nums transition-colors ${delta > 0 ? "bg-ok/15 text-ok" : `bg-surface-2 ${invested === s.id ? "text-fg" : "text-muted"}`}`}
                   initial={{ opacity: 0, scale: 0.6 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ opacity: { duration: 0.18, ease: "easeOut" } }}

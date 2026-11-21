@@ -15,7 +15,7 @@ function TaskBox({ estimate, value, critical }: { estimate: Estimate; value?: nu
       }`}
     >
       <span
-        className={`text-[9px] text-muted lg:text-[11px] ${value === undefined ? "" : "max-lg:hidden"}`}
+        className={`text-[9px] lg:text-[11px] ${critical ? "text-fg" : "text-muted"} ${value === undefined ? "" : "max-lg:hidden"}`}
       >
         {range(estimate)}
       </span>
@@ -87,7 +87,7 @@ export function StreamNetwork({ streams, sample }: StreamNetworkProps) {
         <motion.div layout aria-hidden className="w-px self-stretch bg-line" />
         <Wire critical={sample !== null} />
         <div className="flex h-9 w-9 shrink-0 flex-col text-center lg:h-16 lg:w-20">
-          <span className="text-[9px] text-muted lg:text-xs">Prep</span>
+          <span className={`text-[9px] lg:text-xs ${sample !== null ? "font-semibold text-fg" : "text-muted"}`}>Prep</span>
           <TaskBox estimate={PREP} value={sample?.prep} critical={sample !== null} />
         </div>
       </div>

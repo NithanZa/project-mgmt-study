@@ -110,7 +110,7 @@ export function Line({ config, result, tick, interval, playing, revealConstraint
                 )}
               </span>
             </Tile>
-            <Busy value={col.busy} showLabel={showBusy} />
+            <Busy value={col.busy} showLabel={showBusy} focused={isConstraint || selected === col.id} />
           </div>
         );
       })}
@@ -165,7 +165,7 @@ function Dial({ value }: { value: number }) {
   );
 }
 
-function Busy({ value, showLabel }: { value: number | null; showLabel: boolean }) {
+function Busy({ value, showLabel, focused }: { value: number | null; showLabel: boolean; focused: boolean }) {
   if (value === null) return <div className="h-3 sm:h-4" />;
   return (
     <div data-busy={Math.round(value * 100)} className="flex h-3 items-center gap-1 sm:h-4">
@@ -179,7 +179,7 @@ function Busy({ value, showLabel }: { value: number | null; showLabel: boolean }
       </div>
       <motion.span
         aria-hidden={!showLabel}
-        className="w-6 text-right text-[9px] tabular-nums text-muted sm:w-8 sm:text-[11px]"
+        className={`w-6 text-right text-[9px] tabular-nums transition-colors sm:w-8 sm:text-[11px] ${focused ? "text-fg" : "text-muted"}`}
         initial={false}
         animate={{ opacity: showLabel ? 1 : 0 }}
         transition={FADE}

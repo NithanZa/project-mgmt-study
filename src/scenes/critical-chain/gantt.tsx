@@ -202,7 +202,11 @@ export function Gantt(props: GanttProps) {
         <Arrows {...props} />
       </div>
 
-      <div className="flex items-center justify-end text-xs text-muted">{props.laneLabel}</div>
+      <div
+        className={`flex items-center justify-end text-xs transition-colors ${props.clashes.some((c) => c.resource === props.lane) ? "text-fg" : "text-muted"}`}
+      >
+        {props.laneLabel}
+      </div>
       <Lane {...props} />
 
       <div className="text-right text-[0.65rem] leading-4 text-muted">day</div>

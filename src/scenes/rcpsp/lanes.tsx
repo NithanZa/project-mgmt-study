@@ -47,9 +47,13 @@ export function LaneRows({
     const max = LANE_MAX[r];
     const cap = capacities[r];
     const pctOf = (units: number) => `${(units / max) * 100}%`;
+    const runs = overloads(profile[r], cap);
     return (
       <Fragment key={r}>
-        <div className="flex items-center pr-1 text-muted" style={{ gridRow: firstRow + i }}>
+        <div
+          className={`flex items-center pr-1 transition-colors ${runs.length > 0 ? "text-fg" : "text-muted"}`}
+          style={{ gridRow: firstRow + i }}
+        >
           <span className="sm:hidden">{NAME[r][0]}</span>
           <span className="hidden sm:inline">{NAME[r][1]}</span>
         </div>
@@ -65,7 +69,7 @@ export function LaneRows({
             ))}
           </div>
           <AnimatePresence initial={false}>
-            {overloads(profile[r], cap).map((o) => (
+            {runs.map((o) => (
               <motion.div
                 key={`${o.start}-${o.units}`}
                 className="hatch absolute border border-constraint text-constraint"

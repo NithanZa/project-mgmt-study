@@ -102,7 +102,7 @@ export function StreamMap({ steps, showWaste, active, onInspect, onLeave }: Stre
                 y={118}
                 textAnchor="middle"
                 fontSize={9.5}
-                className="fill-muted"
+                className={`transition-colors ${isActive ? "fill-fg" : "fill-muted"}`}
                 initial={false}
                 animate={{ opacity: showWaste ? 1 : 0 }}
                 transition={{ ...FADE, delay: showWaste ? delay : 0 }}

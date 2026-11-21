@@ -150,6 +150,7 @@ export function Network({
             backward={backward}
             lit={lit}
             dimmed={hovered !== null && hovered !== task.id && !waitsFor.has(task.id)}
+            focused={hovered === task.id || waitsFor.has(task.id)}
             waitedOn={waitsFor.has(task.id)}
             selected={selected === task.id}
             onSelect={onSelect}
@@ -174,6 +175,8 @@ interface NodeProps {
   backward: MotionValue<number>;
   lit: boolean;
   dimmed: boolean;
+  /** In the hover focus set: secondary text brightens to full contrast. */
+  focused: boolean;
   waitedOn: boolean;
   selected: boolean;
   onSelect?: (id: string) => void;
@@ -192,6 +195,7 @@ function Node({
   backward,
   lit,
   dimmed,
+  focused,
   waitedOn,
   selected,
   onSelect,
@@ -207,6 +211,7 @@ function Node({
   const pulse = useTransform(() => Math.max(forwardPulse.get(), backwardPulse.get()));
 
   const critical = lit && row.critical;
+  const secondary = `transition-colors ${focused ? "text-fg" : "text-muted"}`;
   const numberRow = `absolute inset-x-0 flex justify-between px-1 tabular-nums ${m.compact ? "text-[9px] leading-[9px]" : "text-xs leading-4"}`;
   const detailsId = useId();
   // The button's name is its visible text (id, weeks, name); the rest is its description.
@@ -252,12 +257,12 @@ function Node({
       >
         <span className={`flex items-baseline justify-between gap-1 ${m.compact ? "text-[11px] leading-none" : "text-sm"}`}>
           <span className={`font-semibold ${critical ? "text-accent" : "text-fg"}`}>{task.id}</span>
-          <span className="tabular-nums text-muted">
+          <span className={`tabular-nums ${secondary}`}>
             <span aria-hidden>{task.weeks}w</span>
             <span className="sr-only">{weeks(task.weeks)},</span>
           </span>
         </span>
-        <span className={m.compact ? "sr-only" : "truncate text-[11px] text-muted"}>{task.name}</span>
+        <span className={m.compact ? "sr-only" : `truncate text-[11px] ${secondary}`}>{task.name}</span>
       </button>
       <span id={detailsId} className="sr-only">
         {details}
@@ -276,7 +281,7 @@ function Node({
         />
       </motion.span>
       {m.numbers && (
-        <motion.div aria-hidden data-latest style={{ opacity: latest }} className={`${numberRow} top-full mt-1 text-muted`}>
+        <motion.div aria-hidden data-latest style={{ opacity: latest }} className={`${numberRow} top-full mt-1 ${secondary}`}>
           <span>{row.ls}</span>
           <span>{row.lf}</span>
         </motion.div>

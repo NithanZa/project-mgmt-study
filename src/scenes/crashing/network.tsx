@@ -85,6 +85,7 @@ export function Network({ tasks, base, paths, recent, flash }: NetworkProps) {
         const saved = base[i].days - t.days;
         const isCritical = critical.has(t.id);
         const isRecent = recent.includes(t.id);
+        const secondary = `transition-colors ${isCritical ? "fill-fg" : "fill-muted"}`;
         return (
           <g
             key={t.id}
@@ -121,13 +122,13 @@ export function Network({ tasks, base, paths, recent, flash }: NetworkProps) {
               animate={{ opacity: isCritical ? 1 : 0 }}
               transition={FADE}
             />
-            <text x={cx(t)} y={cy(t) - 6} textAnchor="middle" className="fill-muted text-[10px]">
+            <text x={cx(t)} y={cy(t) - 6} textAnchor="middle" className={`text-[10px] ${secondary}`}>
               {t.name}
             </text>
             <text x={cx(t)} y={cy(t) + 13} textAnchor="middle" className="fill-fg text-[15px] font-semibold tabular-nums">
               {t.days}d
               {saved > 0 && (
-                <tspan dx={3} className="fill-muted text-[9px] font-normal">
+                <tspan dx={3} className={`text-[9px] font-normal ${secondary}`}>
                   −{saved}
                 </tspan>
               )}
@@ -142,7 +143,7 @@ export function Network({ tasks, base, paths, recent, flash }: NetworkProps) {
                 <rect x={-4} y={3} width={8} height={6} rx={1.2} className="fill-muted" />
               </motion.g>
             </g>
-            <text x={cx(t)} y={y + NODE_H + 13} textAnchor="middle" className="fill-muted text-[9.5px] tabular-nums">
+            <text x={cx(t)} y={y + NODE_H + 13} textAnchor="middle" className={`text-[9.5px] tabular-nums ${secondary}`}>
               {t.costPerDay > 0 ? `${money(t.costPerDay)}/d · min ${t.minDays}` : "fixed"}
             </text>
           </g>

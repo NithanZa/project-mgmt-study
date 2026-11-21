@@ -75,7 +75,7 @@ export function Gantt({ tasks, schedule, geo, ghosts, flagged, maxStart, onMove 
                 y={y + barH / 2}
                 textAnchor="end"
                 dominantBaseline="central"
-                className="fill-muted"
+                className={`transition-colors ${flagged.includes(t.id) ? "fill-fg" : "fill-muted"}`}
                 style={{ fontSize: font }}
               >
                 {t.name}

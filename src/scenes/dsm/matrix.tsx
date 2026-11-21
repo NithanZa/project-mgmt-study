@@ -223,7 +223,7 @@ function Row({ id, index, pos, hot, onHot, movable, onDragMove, onKeyMove, dim, 
     >
       {names && (
         <motion.span
-          className="absolute right-full flex h-full items-center justify-end pr-3 text-right text-xs leading-tight whitespace-nowrap text-muted"
+          className={`absolute right-full flex h-full items-center justify-end pr-3 text-right text-xs leading-tight whitespace-nowrap transition-colors ${hot?.row === id ? "text-fg" : "text-muted"}`}
           style={{ width: NAME_W }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
