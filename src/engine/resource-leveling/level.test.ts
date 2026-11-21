@@ -58,29 +58,31 @@ describe("resource leveling engine", () => {
   });
 
   it("min-LST leveling gives 9 days with the listed starts", () => {
-    const schedule = level(FEATURES, DEFAULT_CAPACITIES, "min-lst");
+    const { schedule, order } = level(FEATURES, DEFAULT_CAPACITIES, "min-lst");
     expect(makespan(schedule)).toBe(9);
     expect(starts(schedule)).toEqual({ X1: 0, Y1: 3, Z1: 5, X2: 3, Y2: 5, Z2: 7, X3: 7, Y3: 8 });
     expect(feasible(schedule, DEFAULT_CAPACITIES)).toBe(true);
+    expect(order).toEqual(["X1", "Y1", "X2", "Y2", "Z1", "Z2", "X3", "Y3"]);
   });
 
   it("shortest-first gives 12 days", () => {
-    const schedule = level(FEATURES, DEFAULT_CAPACITIES, "shortest");
+    const { schedule, order } = level(FEATURES, DEFAULT_CAPACITIES, "shortest");
     expect(makespan(schedule)).toBe(12);
+    expect(order).toEqual(["Y1", "Z1", "Z2", "X1", "Y2", "Y3", "X2", "X3"]);
     expect(feasible(schedule, DEFAULT_CAPACITIES)).toBe(true);
   });
 
   it("two designers give 8 days and one developer gives 12", () => {
     const two = { designer: 2, developer: 2 };
     const one = { designer: 1, developer: 1 };
-    expect(makespan(level(FEATURES, two, "min-lst"))).toBe(8);
-    expect(makespan(level(FEATURES, one, "min-lst"))).toBe(12);
-    expect(feasible(level(FEATURES, two, "min-lst"), two)).toBe(true);
-    expect(feasible(level(FEATURES, one, "min-lst"), one)).toBe(true);
+    expect(makespan(level(FEATURES, two, "min-lst").schedule)).toBe(8);
+    expect(makespan(level(FEATURES, one, "min-lst").schedule)).toBe(12);
+    expect(feasible(level(FEATURES, two, "min-lst").schedule, two)).toBe(true);
+    expect(feasible(level(FEATURES, one, "min-lst").schedule, one)).toBe(true);
   });
 
   it("shift pushes successors and never starts a task before its deps", () => {
-    const base = level(FEATURES, DEFAULT_CAPACITIES, "min-lst");
+    const base = level(FEATURES, DEFAULT_CAPACITIES, "min-lst").schedule;
     const moved = shift(base, FEATURES, "X1", 1);
     expect(moved.X1).toEqual({ start: 1, end: 4 });
     expect(moved.X2).toEqual({ start: 4, end: 8 });

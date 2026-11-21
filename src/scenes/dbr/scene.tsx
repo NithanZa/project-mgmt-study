@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { SceneFrame } from "@/components/lesson/scene-frame";
+import { useSpot } from "@/components/lesson/spotlight";
 import { Button } from "@/components/ui/button";
 import { Readout } from "@/components/ui/readout";
 import { Segmented } from "@/components/ui/segmented";
@@ -10,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import type { SceneProps } from "@/content/types";
 import { INSURED, ROPE, STARVED, TRY_IT, drum, push, type DrumSetting } from "@/engine/dbr/config";
 import { DAYS, ORDERS, SHOP, WELD_INDEX } from "@/engine/dbr/fixture";
-import { BUFFER_MAX, BUFFER_MIN, bufferSweep, meansOverSeeds } from "@/engine/dbr/sweep";
+import { BUFFER_MAX, BUFFER_MIN, bufferSweep, knee, meansOverSeeds } from "@/engine/dbr/sweep";
 import { pct } from "@/lib/format";
 import { simulateLine, type LineResult } from "@/lib/line-sim";
 import { Shop, shopGeometry } from "./shop";
@@ -60,7 +61,9 @@ export function DbrScene({ beat }: SceneProps) {
   const result = useMemo(() => simulateLine(config), [config]);
   const means = useMemo(() => meansOverSeeds(config), [config]);
   const sweep = useMemo(() => bufferSweep(setup.variability), [setup.variability]);
+  const kneeTarget = useMemo(() => knee(sweep), [sweep]);
   const starvedDays = useMemo(() => starvation(result), [result]);
+  const starvedTotals = useMemo(() => runningTotals(starvedDays), [starvedDays]);
   const playback = usePlayback(JSON.stringify(config), DAYS);
   const tick = playback.tick;
   const rope = setup.release === "drum";
@@ -96,6 +99,7 @@ export function DbrScene({ beat }: SceneProps) {
           {...playback}
           onReset={reset}
           starved={starvedDays}
+          starvedTotals={starvedTotals}
           showStarved={rope}
         />
         <div ref={canvasRef} className="relative min-h-0 flex-1">
@@ -139,6 +143,7 @@ export function DbrScene({ beat }: SceneProps) {
                       height={size.height - chartY}
                       points={sweep}
                       bufferTarget={setup.bufferTarget}
+                      knee={kneeTarget}
                     />
                   </motion.div>
                 )}
@@ -156,14 +161,27 @@ function starvation(result: LineResult): boolean[] {
   return result.ticks.map((t) => t.caps[WELD_INDEX] > t.processed[WELD_INDEX]);
 }
 
+/** Starved days up to and including each day, so playback reads a count instead of recounting. */
+function runningTotals(days: boolean[]): number[] {
+  let total = 0;
+  return days.map((d) => (d ? ++total : total));
+}
+
 function controlsFor(beat: number, setup: Setup, update: (patch: Partial<Setup>) => void) {
   if (beat === BEAT.rope)
     return (
       <Segmented label="Release" options={RELEASES} value={setup.release} onChange={(release) => update({ release })} />
     );
-  if (beat >= BEAT.starved)
-    return (
-      <div className="flex w-full gap-4 [&>*]:min-w-0">
+  if (beat >= BEAT.starved) return <DrumSliders setup={setup} update={update} />;
+  return undefined;
+}
+
+function DrumSliders({ setup, update }: { setup: Setup; update: (patch: Partial<Setup>) => void }) {
+  const noiseSpot = useSpot("noise");
+  const bufferSpot = useSpot("buffer");
+  return (
+    <div className="flex w-full gap-4 [&>*]:min-w-0">
+      <div {...noiseSpot} className="flex min-w-0 flex-1 [&>*]:min-w-0">
         <Slider
           label="Variability"
           unit="daily"
@@ -174,6 +192,8 @@ function controlsFor(beat: number, setup: Setup, update: (patch: Partial<Setup>)
           format={noise}
           onChange={(variability) => update({ variability })}
         />
+      </div>
+      <div {...bufferSpot} className="flex min-w-0 flex-1 [&>*]:min-w-0">
         <Slider
           label="Buffer target"
           unit="items"
@@ -183,8 +203,8 @@ function controlsFor(beat: number, setup: Setup, update: (patch: Partial<Setup>)
           onChange={(bufferTarget) => update({ bufferTarget })}
         />
       </div>
-    );
-  return undefined;
+    </div>
+  );
 }
 
 interface PlaybackProps {
@@ -195,11 +215,14 @@ interface PlaybackProps {
   setSpeed: (speed: Speed) => void;
   onReset: () => void;
   starved: boolean[];
+  /** Starved days so far, by day. */
+  starvedTotals: number[];
   showStarved: boolean;
 }
 
-function Playback({ tick, playing, speed, toggle, setSpeed, onReset, starved, showStarved }: PlaybackProps) {
-  const starvedSoFar = starved.slice(0, tick + 1).filter(Boolean).length;
+function Playback({ tick, playing, speed, toggle, setSpeed, onReset, starved, starvedTotals, showStarved }: PlaybackProps) {
+  const spot = useSpot("starved");
+  const starvedSoFar = starvedTotals[tick];
   return (
     <div className="flex items-center gap-1.5">
       <Button variant="icon" className="size-7!" aria-label={playing ? "Pause" : "Play"} onClick={toggle}>
@@ -223,6 +246,7 @@ function Playback({ tick, playing, speed, toggle, setSpeed, onReset, starved, sh
         preserveAspectRatio="none"
         className="ml-1 h-3.5 min-w-0 flex-1"
         aria-hidden
+        {...spot}
         data-days={tick + 1}
       >
         {starved.map((s, d) => {
@@ -244,7 +268,7 @@ function Playback({ tick, playing, speed, toggle, setSpeed, onReset, starved, sh
         day {tick + 1}
       </span>
       {showStarved && (
-        <span className="shrink-0 text-[11px] tabular-nums text-constraint" data-starved={starvedSoFar}>
+        <span {...spot} className="shrink-0 text-[11px] tabular-nums text-constraint" data-starved={starvedSoFar}>
           <span aria-hidden>!</span> {starvedSoFar}
           <span className="sr-only"> starved days</span>
         </span>

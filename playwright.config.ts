@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { BASE_PATH } from "./src/lib/site";
 
 const PORT = 3300;
 const external = process.env.E2E_BASE_URL;
@@ -19,7 +20,7 @@ export default defineConfig({
     ? undefined
     : {
         command: `pnpm build && pnpm start -p ${PORT}`,
-        url: baseURL,
+        url: `${baseURL}${BASE_PATH}`,
         reuseExistingServer: !process.env.CI,
         timeout: 600_000,
       },

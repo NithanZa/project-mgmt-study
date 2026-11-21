@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { useId, useMemo, useState } from "react";
 import { SceneFrame } from "@/components/lesson/scene-frame";
+import { useSpot } from "@/components/lesson/spotlight";
 import { Button } from "@/components/ui/button";
 import { Readout } from "@/components/ui/readout";
 import { Segmented } from "@/components/ui/segmented";
@@ -25,6 +26,10 @@ const MAX_START = Object.fromEntries(
 const EARLY = earlySchedule(FEATURES);
 const WITHIN = levelWithinFloat(FEATURES, DEFAULT_CAPACITIES);
 const LEVELED = level(FEATURES, DEFAULT_CAPACITIES, "min-lst");
+const BY_RULE: Record<Rule, ReturnType<typeof level>> = {
+  "min-lst": LEVELED,
+  shortest: level(FEATURES, DEFAULT_CAPACITIES, "shortest"),
+};
 const DAYS = Array.from({ length: AXIS_DAYS + 1 }, (_, d) => d);
 
 interface Controls {
@@ -35,8 +40,9 @@ interface Controls {
   dragged: Schedule | null;
 }
 
+/** Every beat opens on these; `float` opens with its toggle off so the predict comes first. */
 const INITIAL: Controls = {
-  floatOn: true,
+  floatOn: false,
   levelOn: true,
   rule: "min-lst",
   capacities: DEFAULT_CAPACITIES,
@@ -52,25 +58,32 @@ const HEADCOUNT = [
   { value: 2, label: "2" },
 ];
 
-function view(beat: number, c: Controls) {
+interface View {
+  schedule: Schedule;
+  capacities: Capacities;
+  flagged: readonly string[];
+  /** Booking order to badge, or null when the schedule was not built by booking. */
+  order: readonly string[] | null;
+}
+
+function view(beat: number, c: Controls): View {
+  const plain = { capacities: DEFAULT_CAPACITIES, flagged: [], order: null };
   switch (beat) {
     case 0:
-      return { schedule: EARLY, capacities: DEFAULT_CAPACITIES, flagged: [] };
+      return { ...plain, schedule: EARLY };
     case 1:
-      return c.floatOn
-        ? { schedule: WITHIN.schedule, capacities: DEFAULT_CAPACITIES, flagged: WITHIN.unresolved }
-        : { schedule: EARLY, capacities: DEFAULT_CAPACITIES, flagged: [] };
+      return c.floatOn ? { ...plain, schedule: WITHIN.schedule, flagged: WITHIN.unresolved } : { ...plain, schedule: EARLY };
     case 2:
       return c.levelOn
-        ? { schedule: LEVELED, capacities: DEFAULT_CAPACITIES, flagged: [] }
-        : { schedule: WITHIN.schedule, capacities: DEFAULT_CAPACITIES, flagged: WITHIN.unresolved };
+        ? { ...plain, ...LEVELED }
+        : { ...plain, schedule: WITHIN.schedule, flagged: WITHIN.unresolved };
     case 3:
-      return { schedule: level(FEATURES, DEFAULT_CAPACITIES, c.rule), capacities: DEFAULT_CAPACITIES, flagged: [] };
+      return { ...plain, ...BY_RULE[c.rule] };
     default:
       return {
-        schedule: c.dragged ?? level(FEATURES, c.capacities, "min-lst"),
+        ...plain,
+        schedule: c.dragged ?? level(FEATURES, c.capacities, "min-lst").schedule,
         capacities: c.capacities,
-        flagged: [],
       };
   }
 }
@@ -93,7 +106,7 @@ export function ResourceLevelingScene({ beat }: SceneProps) {
   const c: Controls = saved.beat === beat ? saved : INITIAL;
   const update = (patch: Partial<Controls>) => setSaved({ ...c, ...patch, beat });
 
-  const { schedule, capacities, flagged } = useMemo(() => view(beat, c), [beat, c]);
+  const { schedule, capacities, flagged, order } = useMemo(() => view(beat, c), [beat, c]);
   const end = makespan(schedule);
   const load = useMemo(() => demand(FEATURES, schedule, AXIS_DAYS), [schedule]);
   const list = useMemo(() => overloads(load, capacities), [load, capacities]);
@@ -101,6 +114,7 @@ export function ResourceLevelingScene({ beat }: SceneProps) {
   const [ref, size] = useSize<HTMLDivElement>();
   const geo = useMemo(() => size && layout(FEATURES, size.width, size.height), [size]);
   const hatch = `rl-hatch-${useId().replace(/[^\w-]/g, "")}`;
+  const endSpot = useSpot("end");
 
   const setHeadcount = (r: Resource, n: number) =>
     update({ capacities: { ...c.capacities, [r]: n }, dragged: null });
@@ -143,7 +157,7 @@ export function ResourceLevelingScene({ beat }: SceneProps) {
       label={describe(end, list, flagged)}
       readouts={
         <>
-          <Readout label="End day" value={end} />
+          <Readout label="End day" value={end} spot="end" />
           <Readout label="Overloaded days" value={overloadedDays(list)} />
         </>
       }
@@ -187,7 +201,13 @@ export function ResourceLevelingScene({ beat }: SceneProps) {
               tasks={FEATURES}
               schedule={schedule}
               geo={geo}
-              ghosts={beat <= 2 ? CPM_ROWS : null}
+              rows={CPM_ROWS}
+              showGhosts={beat <= 2}
+              showFloat={beat === 1 || beat === 2}
+              order={order ?? LEVELED.order}
+              showOrder={order !== null}
+              rank={c.rule}
+              showRank={beat === 3}
               flagged={flagged}
               maxStart={MAX_START}
               onMove={
@@ -199,6 +219,8 @@ export function ResourceLevelingScene({ beat }: SceneProps) {
             />
             <motion.line
               aria-hidden
+              {...endSpot}
+              data-end={end}
               y1={geo.top - 4}
               y2={geo.bottom}
               strokeWidth={1.5}

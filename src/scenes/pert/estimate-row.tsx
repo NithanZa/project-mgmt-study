@@ -1,13 +1,17 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useSpot } from "@/components/lesson/spotlight";
 import { expected } from "@/engine/pert/pert";
 import type { PertTask } from "@/engine/pert/types";
+import { pct } from "@/lib/format";
 import { betaPath, MOTION, type RowBox, type Scale } from "./geometry";
 
 const LABEL_H = 14;
 /** Tall rows still draw a short curve, so its label stays close to the bar. */
 const CURVE_MAX = 64;
+/** Gap between the range bar's ends and the numbers beside them. */
+const GAP = 6;
 
 export interface EstimateRowProps {
   task: PertTask;
@@ -17,9 +21,27 @@ export interface EstimateRowProps {
   right: number;
   /** Beta curve shown and the marker moved from the mode to the expected value. */
   revealed: boolean;
+  /** Rows fill the canvas, so `o` and `p` print at the range bar's ends. */
+  ends: boolean;
+  /** The `m` to `p` overlay answers to the tail term. */
+  tail: boolean;
+  /** This task's share of the project variance. */
+  share: number;
+  /** Print the share at the range bar's right end. */
+  showShare: boolean;
 }
 
-export function EstimateRow({ task, box, x, right, revealed }: EstimateRowProps) {
+export function EstimateRow({
+  task,
+  box,
+  x,
+  right,
+  revealed,
+  ends,
+  tail,
+  share,
+  showShare,
+}: EstimateRowProps) {
   const { o, m, p } = task.estimate;
   const mean = expected(task.estimate);
   const top = box.labels ? LABEL_H : 0;
@@ -29,6 +51,15 @@ export function EstimateRow({ task, box, x, right, revealed }: EstimateRowProps)
   // Labels sit on their own bar (or its curve's peak), never at the top of a tall row.
   const nameY = bar - 7;
   const valueY = bar - curveH - 7;
+  const endsOpacity = ends && box.labels ? 1 : 0;
+
+  const oSpot = useSpot("o");
+  const pSpot = useSpot("p");
+  const mSpot = useSpot("m");
+  // Before the reveal the marker sits on m and prints m, so it answers to the m term.
+  const markerSpot = useSpot(revealed ? "expected" : "m");
+  const tailSpot = useSpot("tail");
+  const shareSpot = useSpot("share");
 
   return (
     <motion.g
@@ -63,16 +94,63 @@ export function EstimateRow({ task, box, x, right, revealed }: EstimateRowProps)
         animate={{ d: `M${x(o)} ${bar}H${x(p)}` }}
         transition={MOTION}
       />
+      {/* Invisible until the tail term lights it: then the m to p stretch turns accent. */}
+      <motion.path
+        data-tail
+        {...(tail ? tailSpot : {})}
+        className="stroke-transparent data-lit:stroke-accent"
+        strokeWidth={3}
+        strokeLinecap="round"
+        initial={false}
+        animate={{ d: `M${x(m)} ${bar}H${x(p)}` }}
+        transition={MOTION}
+      />
       <motion.path
         data-mode
+        {...mSpot}
         className="stroke-fg"
         strokeWidth={2}
         initial={false}
         animate={{ d: `M${x(m)} ${bar - 5}V${bar + 4}` }}
         transition={MOTION}
       />
+      <g {...oSpot}>
+        <motion.text
+          data-o
+          textAnchor="end"
+          className="fill-muted text-[10px] tabular-nums"
+          initial={false}
+          animate={{ x: x(o) - GAP, y: bar + 3.5, opacity: endsOpacity }}
+          transition={MOTION}
+        >
+          {o}
+        </motion.text>
+      </g>
+      <g {...pSpot}>
+        <motion.text
+          data-p
+          className="fill-muted text-[10px] tabular-nums"
+          initial={false}
+          animate={{ x: x(p) + GAP, y: bar + 3.5, opacity: endsOpacity }}
+          transition={MOTION}
+        >
+          {p}
+        </motion.text>
+      </g>
+      <g {...shareSpot}>
+        <motion.text
+          data-share
+          className="fill-fg text-[10px] font-semibold tabular-nums"
+          initial={false}
+          animate={{ x: x(p) + GAP, y: bar + 3.5, opacity: showShare ? 1 : 0 }}
+          transition={MOTION}
+        >
+          {pct(share)}
+        </motion.text>
+      </g>
       <motion.g
         data-marker
+        {...markerSpot}
         initial={false}
         animate={{ x: x(revealed ? mean : m) }}
         transition={MOTION}

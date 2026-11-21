@@ -8,7 +8,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { Slider } from "@/components/ui/slider";
 import type { SceneProps } from "@/content/types";
 import { DEADLINE, MIGRATION, WIDE_PESSIMISTIC } from "@/engine/pert/fixture";
-import { projectEstimate, withEstimate } from "@/engine/pert/pert";
+import { projectEstimate, variance, withEstimate } from "@/engine/pert/pert";
 import { pct } from "@/lib/format";
 import { EstimateRow } from "./estimate-row";
 import { commitDays } from "./format";
@@ -39,6 +39,12 @@ export function PertScene({ beat }: SceneProps) {
     [widen],
   );
   const project = useMemo(() => projectEstimate(tasks), [tasks]);
+  // Each task's share of the project variance, shown on the widen beat.
+  const shares = useMemo(() => {
+    const total = project.sigma ** 2;
+    return tasks.map((t) => variance(t.estimate) / total);
+  }, [tasks, project]);
+  const writeShare = shares[tasks.findIndex((t) => t.id === WRITE.id)];
 
   const curveMode = beat >= BEAT.project;
   const shownDeadline =
@@ -57,7 +63,7 @@ export function PertScene({ beat }: SceneProps) {
 
   const mean = project.expected.toFixed(1);
   const label = curveMode
-    ? `Project curve: mean ${mean} days, sigma ${project.sigma.toFixed(1)} days, ${pct(probability)} chance of finishing by ${commitDays(shownDeadline)} days${beat === BEAT.widen ? `; ${WRITE.name} pessimistic ${widen} days` : ""}.`
+    ? `Project curve: mean ${mean} days, sigma ${project.sigma.toFixed(1)} days, ${pct(probability)} chance of finishing by ${commitDays(shownDeadline)} days${beat === BEAT.widen ? `; ${WRITE.name} pessimistic ${widen} days, ${pct(writeShare)} of the variance` : ""}.`
     : beat === BEAT.ranges
       ? `Five migration tasks as ranges; the most-likely values sum to ${project.modeSum} days.`
       : `Expected durations sit right of the most-likely values; they sum to ${mean} days, not ${project.modeSum}.`;
@@ -65,8 +71,14 @@ export function PertScene({ beat }: SceneProps) {
   const readouts = curveMode ? (
     <>
       <Readout key="expected" label="Expected" value={project.expected} format={oneDecimal} />
-      <Readout key="sigma" label="Sigma" value={project.sigma} format={oneDecimal} />
-      <Readout key="p" label="P(by deadline)" value={probability} format={percent} />
+      <Readout key="sigma" label="Sigma" value={project.sigma} format={oneDecimal} spot="sigma" />
+      <Readout
+        key="p"
+        label="P(by deadline)"
+        value={probability}
+        format={percent}
+        spot="shade"
+      />
     </>
   ) : (
     <>
@@ -157,6 +169,10 @@ export function PertScene({ beat }: SceneProps) {
                   x={x}
                   right={width - PAD}
                   revealed={beat >= BEAT.expected}
+                  ends={!curveMode}
+                  tail={beat !== BEAT.widen || task.id === WRITE.id}
+                  share={shares[i]}
+                  showShare={beat === BEAT.widen}
                 />
               ))}
               <g data-axis className="fill-muted text-[10px] tabular-nums">

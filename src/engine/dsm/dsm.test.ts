@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feedback, marks, moveRow, partition } from "./dsm";
+import { backwardMarks, feedback, inputsOf, marks, moveRow, partition } from "./dsm";
 import { ALPHABETICAL, BIKE } from "./fixture";
 
 describe("design structure matrix", () => {
@@ -26,6 +26,15 @@ describe("design structure matrix", () => {
     expect(best.order.at(-1)).toBe("R");
     expect(best.blocks).toHaveLength(1);
     expect([...best.blocks[0]].sort()).toEqual(["E", "P", "T"]);
+  });
+
+  it("lists the inputs an activity needs", () => {
+    expect(inputsOf(BIKE, "E")).toEqual(["C", "I", "T"]);
+    expect(inputsOf(BIKE, "M")).toEqual([]);
+  });
+
+  it("finds the one arrow that runs backwards in fixture order", () => {
+    expect(backwardMarks(BIKE)).toEqual([{ row: "E", col: "T" }]);
   });
 
   it("moves a row without losing ids", () => {

@@ -34,7 +34,18 @@ export const COMMITTED = {
   rss: committedDate(TASKS, PLAN, "rss"),
 };
 
-export const OVERRUN_MAX = { cms: 4, pages: 6 };
+export const OVERRUN_MAX = { cms: 4, pages: 6, design: 4 };
+
+/** Safety cut from each buffered chain task (padded minus 50% estimate), in chain order. */
+export const CHAIN_SAFETIES = CHAINS.buffered.ids.map((id) => {
+  const t = TASKS.find((task) => task.id === id)!;
+  return t.safe - t.aggressive;
+});
+/** Total safety the project buffer replaces. */
+export const CHAIN_SAFETY = CHAIN_SAFETIES.reduce((a, b) => a + b, 0);
+
+/** Share of the project buffer used once Pages is done and Design ran `design` days late. */
+export const bufferUsedAt = (design: number) => fever(TASKS, { design, pages: 0 }).bufferUsed;
 
 /** Smallest CMS overrun that puts the fever point in `zone`. */
 export function firstCmsOverrun(target: Zone): number {

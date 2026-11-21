@@ -4,6 +4,17 @@ export function marks(activities: Activity[]): Mark[] {
   return activities.flatMap((a) => a.deps.map((col) => ({ row: a.id, col })));
 }
 
+/** Ids of the activities whose output `id` needs, in fixture order. */
+export function inputsOf(activities: Activity[], id: string): string[] {
+  return activities.find((a) => a.id === id)?.deps ?? [];
+}
+
+/** Marks whose input is listed after the activity that needs it: arrows that run backwards. */
+export function backwardMarks(activities: Activity[]): Mark[] {
+  const rank = new Map(activities.map((a, i) => [a.id, i]));
+  return marks(activities).filter((m) => rank.get(m.col)! > rank.get(m.row)!);
+}
+
 /** Marks whose dependency is sequenced after the row that needs it. */
 export function feedback(
   activities: Activity[],

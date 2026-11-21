@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 
 const STEPS = ["Identify", "Exploit", "Subordinate", "Elevate", "Repeat"];
 /** First step and number of steps each beat highlights; the opening beat highlights none. */
-const FOCUS: Partial<Record<number, [number, number]>> = { 1: [0, 1], 2: [1, 2], 3: [3, 1], 4: [4, 1] };
+const FOCUS: Partial<Record<number, [number, number]>> = { 1: [0, 1], 2: [1, 1], 3: [2, 1], 4: [3, 1], 5: [4, 1] };
 
 export function FocusingSteps({ beat }: { beat: number }) {
   const focus = FOCUS[beat];

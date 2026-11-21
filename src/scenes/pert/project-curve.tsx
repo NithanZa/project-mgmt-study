@@ -2,6 +2,7 @@
 
 import { animate, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useSpot } from "@/components/lesson/spotlight";
 import { pct } from "@/lib/format";
 import { AXIS_MAX, type Bell, bellPath, bellTop, FADE, invertX, MOTION, type Scale, SPRING } from "./geometry";
 import { commitDays } from "./format";
@@ -16,12 +17,22 @@ export interface ProjectCurveProps {
   compact: boolean;
 }
 
+/** Height of the ±1σ bracket above the curve's baseline, and its end ticks. */
+const BRACKET_Y = 12;
+const BRACKET_TICK = 4;
+
 export function ProjectCurve({ bell, x, base, deadline, visible, compact }: ProjectCurveProps) {
   const peak = bellTop(bell, base);
+  const shadeSpot = useSpot("shade");
+  const sigmaSpot = useSpot("sigma");
+  const lo = x(bell.mean - bell.sigma);
+  const hi = x(bell.mean + bell.sigma);
+  const y = base - BRACKET_Y;
   return (
     <motion.g initial={false} animate={{ opacity: visible ? 1 : 0 }} transition={FADE}>
       <motion.path
         data-shade
+        {...shadeSpot}
         className="fill-accent/25"
         initial={false}
         animate={{ d: bellPath(bell, x, base, 0, deadline, true) }}
@@ -35,6 +46,29 @@ export function ProjectCurve({ bell, x, base, deadline, visible, compact }: Proj
         animate={{ d: bellPath(bell, x, base, 0, AXIS_MAX, false) }}
         transition={MOTION}
       />
+      <g data-sigma {...sigmaSpot}>
+        <motion.path
+          className="fill-none stroke-fg"
+          strokeWidth={1.5}
+          initial={false}
+          animate={{
+            d: `M${lo} ${y - BRACKET_TICK}V${y + BRACKET_TICK}M${lo} ${y}H${hi}M${hi} ${y - BRACKET_TICK}V${y + BRACKET_TICK}`,
+          }}
+          transition={MOTION}
+        />
+        {/* A surface halo keeps the label legible where it crosses the bell on narrow screens. */}
+        <motion.text
+          className="fill-fg stroke-surface text-[11px] font-semibold tabular-nums"
+          paintOrder="stroke"
+          strokeWidth={3}
+          strokeLinejoin="round"
+          initial={false}
+          animate={{ x: hi + 4, y: y + 4 }}
+          transition={MOTION}
+        >
+          σ {bell.sigma.toFixed(1)}
+        </motion.text>
+      </g>
       <motion.g data-mean initial={false} animate={{ x: x(bell.mean) }} transition={MOTION}>
         <motion.path
           className="stroke-fg"
@@ -127,6 +161,8 @@ export function DeadlineHandle({
   };
 
   const text = `${commitDays(deadline)} days, ${pct(probability)} chance`;
+  const deadlineSpot = useSpot("deadline");
+  const shadeSpot = useSpot("shade");
 
   return (
     <motion.div
@@ -161,13 +197,15 @@ export function DeadlineHandle({
       className={`group absolute left-0 -ml-5 flex w-10 touch-none justify-center outline-none ${interactive ? "cursor-ew-resize" : "pointer-events-none"}`}
     >
       <span
+        {...deadlineSpot}
         className={`absolute top-0 rounded-full px-1.5 py-px text-[11px] font-semibold whitespace-nowrap tabular-nums ${interactive ? "bg-fg text-bg group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent" : "bg-surface-2 text-fg"}`}
       >
         {commitDays(deadline)} d
       </span>
-      <span className="mt-4 h-full w-0.5 rounded-full bg-fg" />
+      <span {...deadlineSpot} className="mt-4 h-full w-0.5 rounded-full bg-fg" />
       <span
         data-probability
+        {...shadeSpot}
         className="absolute top-[72%] right-[calc(50%+4px)] rounded-sm bg-surface/85 px-0.5 text-sm font-semibold tabular-nums text-fg"
       >
         {pct(probability)}

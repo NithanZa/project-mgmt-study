@@ -42,6 +42,15 @@ describe("theory of constraints scenarios", () => {
     expect(simulateLine(exploitLoss(exploitLoss(baseline(), true), false)).throughput).toBe(25);
   });
 
+  it("pacing release to the oven keeps throughput and drains the oven pile", () => {
+    const push = simulateLine(baseline());
+    const paced = simulateLine(subordinate(baseline()));
+    expect(Math.round(paced.throughput * 10)).toBe(Math.round(push.throughput * 10));
+    expect(paced.ticks[paced.ticks.length - 1].queues[ovenIndex]).toBeLessThan(
+      push.ticks[push.ticks.length - 1].queues[ovenIndex] / 10,
+    );
+  });
+
   it("only the oven investment moves throughput", () => {
     expect(investDeltas()).toEqual({ mix: 0, proof: 0, oven: 12, cool: 0, pack: 0 });
   });

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Readout } from "@/components/ui/readout";
 import { Segmented } from "@/components/ui/segmented";
 import type { SceneProps } from "@/content/types";
-import { feedback, moveRow } from "@/engine/dsm/dsm";
+import { feedback, inputsOf, moveRow } from "@/engine/dsm/dsm";
 import { ALPHABETICAL, BIKE } from "@/engine/dsm/fixture";
 import type { Mark, Order } from "@/engine/dsm/types";
 import { Graph } from "./graph";
@@ -17,7 +17,15 @@ import { BEST, BLOCK, FADE, LOOPS, MARKS, NAME, blockRows } from "./model";
 import { Morph, type View } from "./morph";
 import { useShape } from "./use-shape";
 
-export const BEAT = { see: 0, rework: 1, partition: 2, play: 3, plan: 4 } as const;
+export const BEAT = {
+  inputs: 0,
+  matrix: 1,
+  diagonal: 2,
+  rework: 3,
+  partition: 4,
+  play: 5,
+  plan: 6,
+} as const;
 
 const VIEWS: { value: View; label: string }[] = [
   { value: "graph", label: "Graph" },
@@ -27,17 +35,26 @@ const LOOP_TEXT = LOOPS.map((m) => `${NAME[m.col]} feeds back into ${NAME[m.row]
 const rows = (v: number) => `${Math.round(v)} rows`;
 const marksAbove = (n: number) => `${n} mark${n === 1 ? "" : "s"} above the diagonal`;
 const same = (a: Order, b: Order) => a.every((id, i) => id === b[i]);
+const names = (ids: string[]) => {
+  const n = ids.map((id) => NAME[id]);
+  return n.length > 1 ? `${n.slice(0, -1).join(", ")} and ${n.at(-1)}` : (n[0] ?? "nothing");
+};
 
 export function DsmScene({ beat }: SceneProps) {
   const [ref, shape] = useShape<HTMLDivElement>();
   const [view, setView] = useState<View>("graph");
   const [order, setOrder] = useState<Order>(ALPHABETICAL);
   const [hot, setHot] = useState<Mark | null>(null);
+  const [hotRow, setHotRow] = useState<string | null>(null);
+  const [hotNode, setHotNode] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
-  const shownView = beat === BEAT.see ? view : "matrix";
-  // The first two beats teach on the alphabetical order; later beats show the learner's own.
+  const shownView = beat === BEAT.inputs ? "graph" : beat === BEAT.matrix ? view : "matrix";
+  // The reading beats teach on the alphabetical order; later beats show the learner's own.
   const shown = beat <= BEAT.rework ? ALPHABETICAL : order;
+  // Only the inputs beat lets the learner point at graph nodes.
+  const inputsNode = beat === BEAT.inputs ? hotNode : null;
+  const inputs = inputsNode ? inputsOf(BIKE, inputsNode) : [];
   const count = useMemo(() => feedback(BIKE, shown).count, [shown]);
   const block = blockRows(shown);
   const blockSpan = block.last - block.first + 1;
@@ -64,9 +81,15 @@ export function DsmScene({ beat }: SceneProps) {
 
   const label =
     shownView === "graph"
-      ? `Dependency graph of ${BIKE.length} bike development activities with ${MARKS.length} dependencies; ${LOOP_TEXT}.`
+      ? `Dependency graph of ${BIKE.length} bike development activities with ${MARKS.length} dependencies; ${LOOP_TEXT}.${
+          inputsNode ? ` ${NAME[inputsNode]} needs ${names(inputs)}.` : ""
+        }`
       : `Design structure matrix in order ${shown.join(" ")}: ${marksAbove(count)}.${
           showBlock ? ` Coupled block ${BLOCK.join(" ")} spans ${blockSpan} rows.` : ""
+        }${
+          beat === BEAT.diagonal
+            ? " Rows and columns share the order; the diagonal is each task's own slot."
+            : ""
         }`;
 
   const readouts =
@@ -74,16 +97,17 @@ export function DsmScene({ beat }: SceneProps) {
       <>
         <Readout label="Activities" value={BIKE.length} />
         <Readout label="Dependencies" value={MARKS.length} />
+        {inputsNode && <Readout label={`Inputs of ${inputsNode}`} value={inputs.length} />}
       </>
     ) : (
       <>
-        <Readout label="Marks above diagonal" value={count} />
+        <Readout label="Marks above diagonal" value={count} spot="count" />
         {showBlock && <Readout label="Coupled block" value={blockSpan} format={rows} />}
       </>
     );
 
   const controls =
-    beat === BEAT.see ? (
+    beat === BEAT.matrix ? (
       <Segmented label="View" options={VIEWS} value={view} onChange={setView} />
     ) : beat === BEAT.partition ? (
       <>
@@ -110,6 +134,8 @@ export function DsmScene({ beat }: SceneProps) {
           <Morph
             view={shownView}
             shape={shape}
+            hotNode={inputsNode}
+            onHotNode={beat === BEAT.inputs ? setHotNode : undefined}
             slot={
               <AnimatePresence initial={false}>
                 <motion.div
@@ -129,11 +155,14 @@ export function DsmScene({ beat }: SceneProps) {
                 order={shown}
                 hot={hot}
                 onHot={setHot}
+                hotRow={hotRow}
+                onHotRow={setHotRow}
                 movable={movable}
                 onDragMove={dragTo}
                 onKeyMove={moveByKey}
                 showBlock={showBlock}
                 stressRework={beat === BEAT.rework}
+                stressOrder={beat === BEAT.diagonal}
                 names={shape.names}
               />
             }

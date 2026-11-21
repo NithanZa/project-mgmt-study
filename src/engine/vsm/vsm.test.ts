@@ -54,6 +54,22 @@ describe("improvements", () => {
     );
   });
 
+  it("are labelled with the wait they cap and the cap", () => {
+    expect(IMPROVEMENTS.map((i) => i.label)).toEqual([
+      "Take-home wait 1 d",
+      "Onsite wait 2 d",
+      "Debrief wait 0 d",
+      "Offer wait 1 d",
+      "Screen waits 1 d",
+    ]);
+    for (const i of IMPROVEMENTS) {
+      const cap = Number(/(\d+) d$/.exec(i.label)![1]);
+      const changed = i.apply(HIRING).filter((s, k) => s.waitDays !== HIRING[k].waitDays);
+      expect(changed.length, i.label).toBeGreaterThan(0);
+      for (const s of changed) expect(s.waitDays, i.label).toBe(cap);
+    }
+  });
+
   it("do not mutate the input", () => {
     const before = structuredClone(HIRING);
     applyImprovements(HIRING, FUTURE_B);

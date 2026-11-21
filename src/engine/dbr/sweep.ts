@@ -48,3 +48,12 @@ export function bufferSweep(variability: number, seeds = 8): SweepPoint[] {
   }
   return points;
 }
+
+/** How close to the sweep's best utilisation the knee sits. */
+export const KNEE_GAP = 0.02;
+
+/** The knee: the smallest buffer target that keeps the drum within `KNEE_GAP` of its best utilisation. */
+export function knee(points: SweepPoint[]): number {
+  const best = Math.max(...points.map((p) => p.drumUtilization));
+  return points.find((p) => p.drumUtilization >= best - KNEE_GAP)!.bufferTarget;
+}

@@ -58,6 +58,17 @@ describe("computeCriticalPath", () => {
     expect(result.duration).toBe(12);
   });
 
+  // The lesson's predicts: a merge waits for its latest input, a burst finishes by its
+  // earliest successor, and shortening a task with float only adds float.
+  it("answers the lesson's predicts", () => {
+    const { rows } = computeCriticalPath(tasks);
+    expect(rows.G.es).toBe(Math.max(rows.C.ef, rows.D.ef));
+    expect(rows.D.lf).toBe(Math.min(rows.F.ls, rows.G.ls));
+    const quick = computeCriticalPath(withWeeks(tasks, "D", 1));
+    expect(quick.duration).toBe(12);
+    expect(quick.rows.D.float).toBe(rows.D.float + 2);
+  });
+
   it("throws CycleError on a cycle", () => {
     const cyclic: Task[] = tasks.map((t) => (t.id === "A" ? { ...t, deps: ["H"] } : t));
     expect(() => computeCriticalPath(cyclic)).toThrow(CycleError);

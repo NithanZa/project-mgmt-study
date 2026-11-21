@@ -48,6 +48,24 @@ describe("simulate", () => {
     expect(rush[1]).toBe(Math.max(...rush));
   });
 
+  test("each added stream pushes P50 later, by less each time", () => {
+    const p50 = [1, 2, 5, 6].map((streams) => simulate({ streams, runs: 5000, seed: 7 }).p50);
+    expect(p50[1] - p50[0]).toBeGreaterThan(0.5);
+    expect(p50[3] - p50[2]).toBeGreaterThan(0);
+    expect(p50[3] - p50[2]).toBeLessThan((p50[1] - p50[0]) / 2);
+  });
+
+  test("few runs finish by the PERT date, and rushed Speakers still miss some", () => {
+    const sim = simulate({ streams: 3, runs: 5000, seed: 7 });
+    const pert = pertTotal({ streams: 3 });
+    const share = sim.durations.filter((d) => d <= pert).length / sim.durations.length;
+    expect(share).toBeGreaterThan(0.1);
+    expect(share).toBeLessThan(0.2);
+    const rushed = simulate({ streams: 3, runs: 5000, seed: 7, rush: true }).criticality[1];
+    expect(rushed).toBeGreaterThan(0.6);
+    expect(rushed).toBeLessThan(0.8);
+  });
+
   test("histogram bins are 0.5 days wide and hold every run", () => {
     const sim = simulate({ streams: 3, runs: 1000, seed: 7 });
     for (const bin of sim.histogram) expect(bin.to - bin.from).toBe(0.5);

@@ -35,7 +35,8 @@ Each lesson is four layers, each in its own folder:
    controls bottom, an `aria-label` that describes the current state).
 3. **Beats** (`src/content/lessons/<slug>.tsx`): five or so steps of copy. Each beat
    changes one thing in the scene, and every number in the copy comes from the
-   engine.
+   engine. Beats teach with spotlight terms, at most three predicts, whys where a
+   result needs its mechanism, and a recap.
 4. **Check** (same file): one question on the last beat that marks the lesson
    complete.
 
@@ -90,6 +91,18 @@ Every lesson is checked against this list. The phase 16 review is in
   except playback runs longer than 600 ms. Only transforms, opacity, `layout`
   and SVG path data animate. `MotionConfig reducedMotion="user"` is respected
   and every beat change still reads without motion.
+- **Teaching.** Four primitives in `src/components/lesson/` carry the teaching.
+  A spotlight term (`<Term id>`) is a word in the copy that lights the scene
+  elements tagged `data-spot` with its id and dims the rest. A predict
+  (`beat.predict`) asks for a guess before the learner acts, then shows the
+  answer with a one-clause reason. A why (`beat.why`) is a "Why?" toggle that
+  reveals the mechanism in at most forty words. A recap (`lesson.recap`) is a
+  three-to-six-step "do it yourself" list on the last beat, and each step jumps
+  to the beat that showed it. Every beat has at least one hands-on element: a
+  control, a drag or hover in the scene, a term, or a predict. A why alone is
+  not enough. Every lesson has a recap and one to three predicts. Every term
+  lights at least one visible element on its beat. `src/content/teaching.test.ts`
+  and the Playwright suite enforce these rules.
 - **Interaction.** Every control has a visible label, a unit and keyboard
   operation. Sliders snap to whole units unless stated otherwise. Anything the
   learner can break has a Reset.

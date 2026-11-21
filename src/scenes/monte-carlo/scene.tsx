@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { SceneProps } from "@/content/types";
 import { SceneFrame } from "@/components/lesson/scene-frame";
+import { useSpot } from "@/components/lesson/spotlight";
 import { Button } from "@/components/ui/button";
 import { Readout } from "@/components/ui/readout";
 import { Slider } from "@/components/ui/slider";
@@ -17,6 +18,8 @@ import { Histogram } from "./histogram";
 import { BAND_SEEDS, DEFAULT_STREAMS, MAX_RUNS, RUN_STOPS, band, simFor, warmBand } from "./model";
 import { FADE } from "./scale";
 import { StreamNetwork } from "./stream-network";
+
+export const BEAT = { roll: 0, distribution: 1, mergeBias: 2, criticality: 3, convergence: 4 } as const;
 
 const BATCHES = [10, 100, 1000, 5000];
 /** Below this many runs the quantiles are too noisy to mark. */
@@ -49,6 +52,8 @@ export function MonteCarloScene({ beat }: SceneProps) {
   const sample = beat === 0 && fresh && roll !== null ? sim.sample(roll) : null;
   const convergence = beat === 4 ? band() : null;
   const point = convergence?.[stop];
+  // The distribution beat introduces the summary numbers; the roll beat only counts runs.
+  const summary = beat >= BEAT.distribution;
 
   useEffect(() => {
     // Warm beat 5's convergence a seed per idle slice while the learner reads.
@@ -77,12 +82,12 @@ export function MonteCarloScene({ beat }: SceneProps) {
   };
 
   const shownStreams = streamsFor(streams, rushed);
-  const quantiles = view.runs >= MIN_QUANTILE_RUNS ? { p50: view.p50, p80: view.p80 } : null;
+  const quantiles = summary && view.runs >= MIN_QUANTILE_RUNS ? { p50: view.p50, p80: view.p80 } : null;
   const label = [
     `Conference network, ${streams} parallel ${streams === 1 ? "stream" : "streams"}${rushed ? ", Speakers rushed" : ""}`,
     `${count(view.runs)} runs`,
-    view.runs > 0 ? `P50 ${days(view.p50)}, P80 ${days(view.p80)}` : "no finish dates yet",
-    `PERT ${days(pert)}`,
+    !summary ? "" : view.runs > 0 ? `P50 ${days(view.p50)}, P80 ${days(view.p80)}` : "no finish dates yet",
+    summary ? `PERT ${days(pert)}` : "",
     sample ? `last roll finished at ${days(sample.finish)}, ${shownStreams[sample.longest].name} longest` : "",
     beat === 3 && fresh
       ? `critical share ${shownStreams.map((s, i) => `${s.name} ${pct(view.criticality[i])}`).join(", ")}`
@@ -92,8 +97,10 @@ export function MonteCarloScene({ beat }: SceneProps) {
     .filter(Boolean)
     .join("; ");
 
+  // Before the first roll no stream is longest yet, so the term points at Roll instead.
+  const longestSpot = useSpot("longest");
   const controls = [
-    <Button key="roll" variant="primary" onClick={rollOnce} disabled={runs >= MAX_RUNS}>
+    <Button key="roll" variant="primary" onClick={rollOnce} disabled={runs >= MAX_RUNS} {...(sample ? {} : longestSpot)}>
       Roll
     </Button>,
     <div key="batch" className="flex flex-col gap-1">
@@ -138,10 +145,14 @@ export function MonteCarloScene({ beat }: SceneProps) {
       label={label}
       readouts={
         <>
-          <Readout label="PERT" value={pert} format={shortDays} />
-          <Readout label="P50" value={view.p50} format={shortDays} />
-          <Readout label="P80" value={view.p80} format={shortDays} />
-          <Readout label="Runs" value={view.runs} format={count} />
+          {summary && (
+            <>
+              <Readout label="PERT" value={pert} format={shortDays} spot="pert" />
+              <Readout label="P50" value={view.p50} format={shortDays} spot="p50" />
+              <Readout label="P80" value={view.p80} format={shortDays} spot="p80" />
+            </>
+          )}
+          <Readout label="Runs" value={view.runs} format={count} spot="runs" />
         </>
       }
       controls={
@@ -156,7 +167,11 @@ export function MonteCarloScene({ beat }: SceneProps) {
       }
     >
       <div className="grid h-full grid-cols-[3fr_2fr] gap-3 lg:grid-cols-1 lg:grid-rows-[2fr_3fr] lg:gap-6">
-        <StreamNetwork streams={shownStreams} sample={sample} />
+        <StreamNetwork
+          streams={shownStreams}
+          sample={sample}
+          rangeSpot={beat === BEAT.roll ? "estimate" : "range"}
+        />
         <div className="relative min-h-0">
           <AnimatePresence initial={false}>
             <motion.div
@@ -171,13 +186,14 @@ export function MonteCarloScene({ beat }: SceneProps) {
                 <Histogram
                   bins={view.histogram}
                   pert={pert}
+                  showPert={summary}
                   quantiles={quantiles}
                   roll={sample && roll !== null ? { key: roll, finish: sample.finish } : null}
                 />
               )}
               {chart === "criticality" && <CriticalityBars streams={shownStreams} shares={view.criticality} />}
               {chart === "convergence" && convergence && point && (
-                <ConvergenceBand points={convergence} runs={point.runs} estimate={view.p80} />
+                <ConvergenceBand points={convergence} runs={point.runs} estimate={view.p80} seeds={BAND_SEEDS} />
               )}
             </motion.div>
           </AnimatePresence>

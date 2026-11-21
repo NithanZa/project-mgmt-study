@@ -58,5 +58,10 @@ describe("critical chain: website redesign", () => {
   it("a late feeding task is absorbed by its feeding buffer", () => {
     expect(fever(REDESIGN, { design: 2, pages: 0 }).bufferUsed).toBe(0);
     expect(fever(REDESIGN, { design: 3, pages: 0 }).bufferUsed).toBe(1 / 5);
+    expect(fever(REDESIGN, { design: 4, pages: 0 })).toMatchObject({
+      chainComplete: 13 / 16,
+      bufferUsed: 2 / 5,
+      zone: "green",
+    });
   });
 });

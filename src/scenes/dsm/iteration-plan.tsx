@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { useState } from "react";
+import { useSpot } from "@/components/lesson/spotlight";
 import { BEST, BLOCK, FADE, NAME, SPRING } from "./model";
 
 /** The partition order with the coupled block folded into one step. */
@@ -13,6 +14,8 @@ const CHIP =
 
 export function IterationPlan() {
   const [open, setOpen] = useState(false);
+  const sequenceSpot = useSpot("sequence");
+  const iterateSpot = useSpot("iterate");
 
   return (
     <ol
@@ -27,6 +30,7 @@ export function IterationPlan() {
             transition={SPRING}
             aria-label={NAME[ids[0]]}
             data-step={ids[0]}
+            {...sequenceSpot}
             className={`${CHIP} border-line bg-surface-2 px-1`}
           >
             {ids[0]}
@@ -39,6 +43,7 @@ export function IterationPlan() {
               aria-label={`Iterate ${ids.map((id) => NAME[id]).join(", ")}`}
               onClick={() => setOpen((o) => !o)}
               data-step="iterate"
+              {...iterateSpot}
               className={`${CHIP} gap-1.5 border-constraint bg-surface px-2 text-constraint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
             >
               <span aria-hidden>↻</span>

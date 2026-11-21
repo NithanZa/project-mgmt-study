@@ -1,6 +1,7 @@
 "use client";
 
 import { LessonShell } from "@/components/lesson/lesson-shell";
+import { Term } from "@/components/lesson/term";
 import { HOUSE, MAX_OVERLAP } from "@/engine/fast-tracking/fixture";
 import { bestOverlaps, schedule } from "@/engine/fast-tracking/schedule";
 import { days, pct } from "@/lib/format";
@@ -25,8 +26,10 @@ export const lesson: Lesson = {
       title: "Finish-to-start is safe and slow.",
       body: (
         <>
-          Each phase waits for the one before it to finish, so the house takes{" "}
-          {days(sequential.planned)}. Nothing overlaps, so nothing is redone.
+          <Term id="finish-to-start">Finish-to-start</Term>: each phase waits for the one before it
+          to finish, so the house takes {days(sequential.planned)}. Nothing overlaps, so nothing is
+          redone and the <Term id="expected">expected finish</Term> equals the{" "}
+          <Term id="plan">plan</Term>.
         </>
       ),
     },
@@ -35,9 +38,27 @@ export const lesson: Lesson = {
       title: "Overlap saves days but invites rework.",
       body: (
         <>
-          Drag {foundations.name} to start {days(halfway.saved)} before {design.name} ends: you save{" "}
-          {days(halfway.saved)}, but a {pct(halfway.risk)} chance of redoing that work means{" "}
-          {days(halfway.expectedRework)} of expected rework.
+          Drag {foundations.name} to start {days(halfway.saved)} before {design.name} ends. That{" "}
+          <Term id="overlap">overlap</Term> moves the <Term id="plan">planned finish</Term>{" "}
+          {days(halfway.saved)} sooner.
+        </>
+      ),
+      predict: {
+        prompt: `${foundations.name} starts ${days(halfway.saved)} early. On average, how much sooner does the house finish?`,
+        options: [days(halfway.saved), days(halfway.net), "No sooner"],
+        answer: 1,
+        why: `${days(halfway.expectedRework)} of expected rework eats half the saving.`,
+      },
+    },
+    {
+      id: "risk",
+      title: "Risk is the unfinished share of Design.",
+      body: (
+        <>
+          When {foundations.name} starts {days(halfway.saved)} early, {pct(halfway.risk)} of{" "}
+          {design.name} is still <Term id="unfinished">unfinished</Term>, so that is the chance its
+          work changes. <Term id="rework">Expected rework</Term> is that chance times{" "}
+          {days(halfway.saved)}: {days(halfway.expectedRework)}.
         </>
       ),
     },
@@ -46,21 +67,37 @@ export const lesson: Lesson = {
       title: "Every overlap has a sweet spot.",
       body: (
         <>
-          Net saving is overlap minus expected rework. It peaks at {days(best[0])}, half of{" "}
-          {design.name}; overlap more and the point slides back down.
+          <Term id="net">Net saving</Term> is overlap minus expected rework. It{" "}
+          <Term id="sweet-spot">peaks</Term> at {days(best[0])}, half of {design.name}; overlap more
+          and the point slides back down.
+        </>
+      ),
+      why: (
+        <>
+          Risk grows with overlap, and so do the days at stake, so rework grows with the square.
+          Early overlap days are nearly free; the last ones lose almost a full day each.
         </>
       ),
     },
     {
       id: "presets",
-      title: "Overlap everything and you gain almost nothing.",
+      title: "Overlap each phase by half its predecessor.",
       body: (
         <>
-          Max overlap expects {whole(maxed.expected)}, barely better than{" "}
-          {days(sequential.expected)}. Balanced overlaps each phase by half its predecessor and
-          expects {whole(balanced.expected)}.
+          Pick Max to overlap every phase as far as it goes. Then pick Balanced, which overlaps
+          each phase by half its predecessor and expects {whole(balanced.expected)}.
         </>
       ),
+      predict: {
+        prompt: `Max overlap plans ${days(maxed.planned)}. Expected finish?`,
+        options: [
+          `About ${days(maxed.planned)}`,
+          `Only a few days under ${days(sequential.expected)}`,
+          "Later than sequential",
+        ],
+        answer: 1,
+        why: `Rework adds about ${whole(maxed.expectedRework)} back.`,
+      },
     },
     {
       id: "try",
@@ -72,6 +109,13 @@ export const lesson: Lesson = {
         </>
       ),
     },
+  ],
+  recap: [
+    { step: "Lay phases end to end; read the planned finish", beat: "sequential" },
+    { step: "Start a successor early on partial information", beat: "drag" },
+    { step: "Rate risk as how unfinished the predecessor is", beat: "risk" },
+    { step: "Overlap until saved minus expected rework peaks", beat: "sweet-spot" },
+    { step: "Repeat per handoff; judge the expected finish", beat: "presets" },
   ],
   Scene: FastTrackingScene,
   Thumbnail: FastTrackingThumbnail,

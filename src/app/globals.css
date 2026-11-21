@@ -65,6 +65,27 @@ body {
   );
 }
 
+/* Spotlight: while a copy term is active the scene dims every tagged
+   element except the lit one. Opacity only, 180 ms, off under reduced
+   motion. */
+[data-spotlight] [data-spot] {
+  transition: opacity 180ms ease-out;
+}
+[data-spotlight] [data-spot]:not([data-lit]) {
+  opacity: 0.3;
+}
+[data-spotlight] [data-lit] {
+  animation: spot-pulse 600ms ease-out 1;
+}
+@keyframes spot-pulse {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-spotlight] [data-spot] { transition: none; }
+  [data-spotlight] [data-lit] { animation: none; }
+}
+
 /* Lesson route transitions: the lesson column and scene panel crossfade. */
 ::view-transition-old(.lesson),
 ::view-transition-new(.lesson) {

@@ -42,6 +42,16 @@ interface Inspected {
 export function VsmScene({ beat }: SceneProps) {
   const [improvements, setImprovements] = useState(NO_IMPROVEMENTS);
   const [onsiteHours, setOnsiteHours] = useState(ONSITE);
+  const [shownBeat, setShownBeat] = useState(beat);
+  // Entering the tuning beat starts from the current state, so the copy's numbers hold
+  // without a manual Reset.
+  if (shownBeat !== beat) {
+    setShownBeat(beat);
+    if (beat === BEAT.tune) {
+      setImprovements(NO_IMPROVEMENTS);
+      setOnsiteHours(ONSITE);
+    }
+  }
   const [inspected, setInspected] = useState<Inspected | null>(null);
   const [drawn, setDrawn] = useState(false);
   const canvas = useRef<HTMLDivElement>(null);
@@ -97,9 +107,9 @@ export function VsmScene({ beat }: SceneProps) {
       label={label}
       readouts={
         <>
-          <Readout label="Lead time" value={drawn ? totals.leadTimeDays : 0} format={days} />
-          <Readout label="Process time" value={drawn ? processHours : 0} format={hours} />
-          <Readout label="Efficiency" value={drawn ? totals.efficiency : 0} format={percent} />
+          <Readout label="Lead time" value={drawn ? totals.leadTimeDays : 0} format={days} spot="lead-time" />
+          <Readout label="Process time" value={drawn ? processHours : 0} format={hours} spot="work" />
+          <Readout label="Efficiency" value={drawn ? totals.efficiency : 0} format={percent} spot="pce" />
         </>
       }
       controls={

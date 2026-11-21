@@ -14,6 +14,9 @@ export interface MorphProps {
   /** Small panel beside or above the matrix (compact graph or plan). */
   slot: ReactNode;
   matrix: ReactNode;
+  /** Full-graph node whose inputs are lit, and its setter (inputs beat only). */
+  hotNode?: string | null;
+  onHotNode?: (id: string | null) => void;
 }
 
 /**
@@ -21,11 +24,11 @@ export interface MorphProps {
  * graph nodes and the matrix row headers share layout ids, so switching views
  * flies each node onto its header and back.
  */
-export function Morph({ view, shape, slot, matrix }: MorphProps) {
+export function Morph({ view, shape, slot, matrix, hotNode, onHotNode }: MorphProps) {
   if (view === "graph") {
     return (
       <div className="absolute inset-0 flex items-center justify-center [container-type:size]">
-        <Graph big rotated={shape.tall} />
+        <Graph big rotated={shape.tall} hotNode={hotNode} onHotNode={onHotNode} />
       </div>
     );
   }

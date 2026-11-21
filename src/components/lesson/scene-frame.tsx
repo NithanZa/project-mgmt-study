@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { useLayoutEffect, useRef, type FocusEvent, type ReactNode } from "react";
 import { FADE } from "@/components/transitions";
+import { useSpotlight } from "./spotlight";
 
 export interface SceneFrameProps {
   /** Summary of the scene's current state for assistive tech. */
@@ -19,6 +20,7 @@ const TABBABLE =
 
 export function SceneFrame({ label, readouts, controls, children }: SceneFrameProps) {
   const scene = useRef<HTMLDivElement>(null);
+  const spot = useSpotlight();
   const strip = useRef<HTMLDivElement>(null);
   /** The control that holds keyboard focus, while it holds it. */
   const focused = useRef<Element | null>(null);
@@ -51,7 +53,7 @@ export function SceneFrame({ label, readouts, controls, children }: SceneFramePr
       <div className="flex min-h-12 items-start justify-end">
         {/* Not a live region: the lesson shell announces the scene label, which carries
             these numbers, once per burst of changes. */}
-        <div data-readouts aria-live="off" className="flex flex-wrap justify-end gap-x-5 gap-y-1">
+        <div data-readouts data-spotlight={spot ?? undefined} aria-live="off" className="flex flex-wrap justify-end gap-x-5 gap-y-1">
           {readouts}
         </div>
       </div>
@@ -60,6 +62,7 @@ export function SceneFrame({ label, readouts, controls, children }: SceneFramePr
         role="group"
         aria-label={label}
         data-scene
+        data-spotlight={spot ?? undefined}
         tabIndex={-1}
         className="relative min-h-0 flex-1 rounded-md outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent focus-visible:outline-solid"
       >
@@ -71,6 +74,7 @@ export function SceneFrame({ label, readouts, controls, children }: SceneFramePr
         <motion.div
           ref={strip}
           data-controls
+          data-spotlight={spot ?? undefined}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={FADE}

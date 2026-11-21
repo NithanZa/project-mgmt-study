@@ -1,7 +1,7 @@
 import type { LineConfig, LineResult } from "@/lib/line-sim";
 
 /** Days the live throughput and cycle-time readouts average over. */
-const WINDOW = 10;
+export const WINDOW = 10;
 
 export interface Flow {
   /** Items on the board at the end of the day. */

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { useSpot, useSpots } from "@/components/lesson/spotlight";
 import type { Column } from "@/engine/kanban/flow";
 import type { LineItem } from "@/lib/line-sim";
 
@@ -14,15 +15,29 @@ export interface BoardProps {
   tick: number;
   /** Milliseconds per day, so a card lands before the next move. */
   interval: number;
+  /** The column the outage can stop. */
+  downId: string;
   className?: string;
 }
 
-export function Board({ columns, limit, items, tick, interval, className = "" }: BoardProps) {
+export function Board({ columns, limit, items, tick, interval, downId, className = "" }: BoardProps) {
   const move = { type: "spring", bounce: 0.2, visualDuration: Math.min(0.4, (interval * 0.8) / 1000) } as const;
+  // Nested tags would multiply their dimming, so frames, cards and ages are siblings, each with its own tag.
+  const columnSpot = useSpot("column");
+  const finishSpot = useSpot("finish");
+  const downSpot = useSpot("down");
+  const cardSpot = useSpot("wip");
+  const finishedCardSpot = useSpots(["wip", "finish"]);
+  const ageSpot = useSpot("age");
+  const limitSpot = useSpot("limit");
+  const waitingSpot = useSpots(["room", "blocked"]);
+  const finishId = columns[columns.length - 1].id;
   return (
     <div className={`grid min-h-0 grid-cols-4 gap-1.5 sm:gap-2.5 ${className}`}>
       {columns.map((col) => {
         const shown = Math.min(SHOWN, col.count);
+        const frameSpot = col.id === finishId ? finishSpot : col.id === downId ? downSpot : columnSpot;
+        const faceSpot = col.id === finishId ? finishedCardSpot : cardSpot;
         return (
           <div
             key={col.id}
@@ -31,29 +46,32 @@ export function Board({ columns, limit, items, tick, interval, className = "" }:
             data-full={col.full}
             data-blocked={col.blocked}
             data-down={col.down}
-            className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-md border border-line bg-surface-2/60"
+            className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-md p-px"
           >
-            <AnimatePresence>
-              {col.down && (
-                <motion.div
-                  key="down"
-                  aria-hidden
-                  className="hatch pointer-events-none absolute inset-0 text-constraint/25"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={FADE}
-                />
-              )}
-            </AnimatePresence>
+            {/* The frame and the hatch fade inline, so this wrapper carries the column's tag. */}
+            <div {...frameSpot} aria-hidden className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-0 rounded-md border border-line bg-surface-2/60" />
+              <AnimatePresence>
+                {col.down && (
+                  <motion.div
+                    key="down"
+                    className="hatch absolute inset-0 text-constraint/25"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={FADE}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
             <div className="relative flex flex-col gap-0.5 px-1 pt-1 sm:px-2 sm:pt-2">
               <span className="truncate text-[10px] leading-tight font-medium sm:text-sm">{col.name}</span>
               <div className="flex items-center justify-between gap-1">
                 <span className="text-[9px] tabular-nums text-muted sm:text-xs">{col.capacity}/day</span>
-                <LimitChip count={col.count} limit={limit} full={col.full} />
+                <LimitChip count={col.count} limit={limit} full={col.full} spot={limitSpot} />
               </div>
             </div>
-            <div className="relative mx-1 my-0.5 h-3.5 sm:mx-2 sm:my-1 sm:h-4">
+            <div {...(col.down ? downSpot : waitingSpot)} className="relative mx-1 my-0.5 h-3.5 sm:mx-2 sm:my-1 sm:h-4">
               <AnimatePresence>
                 {(col.blocked || col.down) && (
                   <motion.div
@@ -88,8 +106,12 @@ export function Board({ columns, limit, items, tick, interval, className = "" }:
                     animate={{ ...slot, opacity: 1 }}
                     transition={{ layout: move, x: move, y: move, opacity: FADE }}
                   >
-                    <div className="flex size-full items-center justify-center rounded-[5px] border border-line bg-surface shadow-xs">
-                      <span className="hidden text-[10px] tabular-nums text-muted sm:inline">{tick - entered}d</span>
+                    {/* The card fades and moves inline, so its face and age carry the tags. */}
+                    <div className="relative flex size-full items-center justify-center">
+                      <div {...faceSpot} className="absolute inset-0 rounded-[5px] border border-line bg-surface shadow-xs" />
+                      <span {...ageSpot} className="relative hidden text-[10px] tabular-nums text-muted sm:inline">
+                        {tick - entered}d
+                      </span>
                     </div>
                   </motion.div>
                 );
@@ -97,10 +119,10 @@ export function Board({ columns, limit, items, tick, interval, className = "" }:
             </div>
             <div className="relative flex h-4 items-center justify-center gap-1 sm:h-6">
               {col.count > shown && (
-                <>
+                <span {...cardSpot} className="flex items-center gap-1">
                   <span aria-hidden className="hatch h-2 w-3 rounded-[2px] border border-constraint/70 text-constraint sm:h-3 sm:w-5" />
                   <span className="text-[10px] font-semibold tabular-nums text-constraint sm:text-xs">+{col.count - shown}</span>
-                </>
+                </span>
               )}
             </div>
           </div>
@@ -110,9 +132,16 @@ export function Board({ columns, limit, items, tick, interval, className = "" }:
   );
 }
 
-function LimitChip({ count, limit, full }: { count: number; limit?: number; full: boolean }) {
+interface LimitChipProps {
+  count: number;
+  limit?: number;
+  full: boolean;
+  spot: ReturnType<typeof useSpot>;
+}
+
+function LimitChip({ count, limit, full, spot }: LimitChipProps) {
   return (
-    <span className="relative shrink-0 rounded-full border border-line bg-surface px-1 text-[9px] leading-3.5 font-semibold tabular-nums sm:px-1.5 sm:text-xs sm:leading-5">
+    <span {...spot} className="relative shrink-0 rounded-full border border-line bg-surface px-1 text-[9px] leading-3.5 font-semibold tabular-nums sm:px-1.5 sm:text-xs sm:leading-5">
       <motion.span
         aria-hidden
         className="absolute -inset-px rounded-full bg-constraint"

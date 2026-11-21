@@ -30,29 +30,45 @@ const PRESET_OPTIONS: { value: Preset; label: string }[] = [
 ];
 const FADE = { duration: 0.18, ease: "easeOut" } as const;
 
+export const BEAT = {
+  sequential: 0,
+  drag: 1,
+  risk: 2,
+  sweetSpot: 3,
+  presets: 4,
+  try: 5,
+} as const;
+
 const NONE: readonly number[] = [];
 const FOUNDATIONS: readonly number[] = [0];
 const ALL: readonly number[] = [0, 1, 2];
-const draggableOn = (beat: number) => (beat === 0 ? NONE : beat <= 2 ? FOUNDATIONS : ALL);
+const draggableOn = (beat: number) =>
+  beat === BEAT.sequential ? NONE : beat <= BEAT.sweetSpot ? FOUNDATIONS : ALL;
 
-/** Overlaps a beat starts from: beat 1 is sequential, beats 2–3 only overlap Foundations. */
+/**
+ * Overlaps a beat starts from: the first beat is sequential, the beats up to the sweet spot
+ * only overlap Foundations, and the risk beat needs some overlap for its tint to show.
+ */
 function enter(beat: number, overlaps: Overlaps): Overlaps {
-  if (beat === 0) return SEQUENTIAL;
-  if (beat <= 2 && (overlaps[1] !== 0 || overlaps[2] !== 0)) return [overlaps[0], 0, 0];
-  return overlaps;
+  if (beat === BEAT.sequential) return SEQUENTIAL;
+  let next = overlaps;
+  if (beat <= BEAT.sweetSpot && (next[1] !== 0 || next[2] !== 0)) next = [next[0], 0, 0];
+  if (beat === BEAT.risk && next[0] === 0) next = [PRESETS.balanced[0], next[1], next[2]];
+  return next;
 }
 
 const sameOverlaps = (a: Overlaps, b: Overlaps) => a.every((o, i) => o === b[i]);
 const finish = (d: number) => `${Math.round(d)} d`;
 
 export function FastTrackingScene({ beat }: SceneProps) {
-  const [overlaps, setOverlaps] = useState<Overlaps>(SEQUENTIAL);
+  // A lesson resumed mid-way starts from the overlaps its beat would have entered with.
+  const [overlaps, setOverlaps] = useState<Overlaps>(() => enter(beat, SEQUENTIAL));
   const [active, setActive] = useState(0);
   const [shownBeat, setShownBeat] = useState(beat);
   if (beat !== shownBeat) {
     setShownBeat(beat);
     setOverlaps(enter(beat, overlaps));
-    if (beat <= 2) setActive(0);
+    if (beat <= BEAT.sweetSpot) setActive(0);
   }
 
   const result = useMemo(() => schedule(overlaps), [overlaps]);
@@ -73,11 +89,16 @@ export function FastTrackingScene({ beat }: SceneProps) {
       .map((p, i) => `${HOUSE[i].name} to ${p.name} ${days(overlaps[i])}`)
       .join(", ")}. ` +
     `Planned finish ${days(result.planned)}, expected finish ${days(result.expected)}.` +
-    (beat >= 1
+    (beat >= BEAT.drag
       ? ` ${HOUSE[active + 1].name}: ${pct(edge.risk)} rework risk, ${days(edge.expectedRework)} expected rework.`
       : "") +
-    (beat >= 2 ? ` Net saving peaks at ${days(PRESETS.balanced[active])} of overlap.` : "") +
-    (beat >= 3 && preset ? ` Preset: ${PRESET_OPTIONS.find((o) => o.value === preset)!.label}.` : "");
+    (beat >= BEAT.risk && edge.saved > 0
+      ? ` ${HOUSE[active].name} is ${pct(edge.risk)} unfinished when ${HOUSE[active + 1].name} starts.`
+      : "") +
+    (beat >= BEAT.sweetSpot ? ` Net saving peaks at ${days(PRESETS.balanced[active])} of overlap.` : "") +
+    (beat >= BEAT.presets && preset
+      ? ` Preset: ${PRESET_OPTIONS.find((o) => o.value === preset)!.label}.`
+      : "");
 
   return (
     <SceneFrame
@@ -90,7 +111,7 @@ export function FastTrackingScene({ beat }: SceneProps) {
         </>
       }
       controls={
-        beat >= 3 ? (
+        beat >= BEAT.presets ? (
           <>
             <Segmented<Preset | "custom">
               label="Overlap preset"
@@ -117,17 +138,19 @@ export function FastTrackingScene({ beat }: SceneProps) {
             result={result}
             overlaps={overlaps}
             draggable={draggableOn(beat)}
-            pulse={beat === 1 && overlaps[0] === 0}
+            pulse={beat === BEAT.drag && overlaps[0] === 0}
+            connectors={beat === BEAT.sequential}
+            unfinished={beat >= BEAT.risk}
             onOverlap={onOverlap}
             onActivate={setActive}
           />
         </div>
         <div className="hidden min-h-0 flex-[2] grid-cols-[3fr_2fr] grid-rows-[minmax(0,1fr)] gap-3 px-3 [@container(min-height:170px)]:grid">
           <AnimatePresence initial={false}>
-            {beat >= 2 && <NetCurve key={active} edge={active} overlap={overlaps[active]} />}
+            {beat >= BEAT.sweetSpot && <NetCurve key={active} edge={active} overlap={overlaps[active]} />}
           </AnimatePresence>
           <AnimatePresence initial={false}>
-            {beat >= 1 && (
+            {beat >= BEAT.drag && (
               <motion.div
                 key="meters"
                 className="col-start-2 row-start-1 min-h-0"
